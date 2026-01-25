@@ -29,10 +29,11 @@ export function SoundSettings() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           size="icon"
           className="glass-button"
+          aria-label="Sound settings"
         >
           {isMuted || (volume ?? 0.3) === 0 ? (
             <SpeakerSlash size={20} weight="fill" />
@@ -49,6 +50,7 @@ export function SoundSettings() {
               variant="ghost"
               size="icon"
               onClick={handleToggleMute}
+              aria-label={isMuted ? "Unmute sound" : "Mute sound"}
             >
               {isMuted ? (
                 <SpeakerSlash size={20} weight="fill" />
