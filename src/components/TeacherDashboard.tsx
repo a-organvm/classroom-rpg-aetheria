@@ -5,7 +5,19 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Quest, Submission, Realm, Theme, THEME_CONFIGS } from '@/lib/types'
-import { Trash, Eye, CheckCircle, XCircle, CalendarBlank, Notepad, ChartBar, Package } from '@phosphor-icons/react'
+import {
+  Trash,
+  Eye,
+  CheckCircle,
+  XCircle,
+  CalendarBlank,
+  Notepad,
+  ChartBar,
+  Package,
+  ChatText,
+  Users,
+  Lightbulb
+} from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { formatTimeAgo } from '@/lib/game-utils'
 import { QUEST_PASS_THRESHOLD } from '@/lib/constants'
@@ -13,6 +25,7 @@ import { RubricManager, type Rubric } from './RubricManager'
 import { CalendarView } from './CalendarView'
 import { GradingInterface } from './GradingInterface'
 import { ExportImportDialog } from './ExportImportDialog'
+import { FeedbackSnippetsManager, StudentSamplesList, FeedbackInsights } from './educator'
 import { useKV } from '@github/spark/hooks'
 import { motion } from 'framer-motion'
 
@@ -149,7 +162,7 @@ export function TeacherDashboard({
       />
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="glass-panel">
+        <TabsList className="glass-panel flex-wrap">
           <TabsTrigger value="overview" className="gap-2">
             <ChartBar size={18} weight="fill" />
             Overview
@@ -161,6 +174,18 @@ export function TeacherDashboard({
           <TabsTrigger value="rubrics" className="gap-2">
             <Notepad size={18} weight="fill" />
             Rubrics
+          </TabsTrigger>
+          <TabsTrigger value="feedback" className="gap-2">
+            <ChatText size={18} weight="fill" />
+            Feedback Library
+          </TabsTrigger>
+          <TabsTrigger value="samples" className="gap-2">
+            <Users size={18} weight="fill" />
+            Student Samples
+          </TabsTrigger>
+          <TabsTrigger value="insights" className="gap-2">
+            <Lightbulb size={18} weight="fill" />
+            Insights
           </TabsTrigger>
         </TabsList>
 
@@ -328,6 +353,22 @@ export function TeacherDashboard({
             rubrics={rubrics || []}
             onUpdate={(updated) => setRubrics(updated)}
           />
+        </TabsContent>
+
+        <TabsContent value="feedback">
+          <FeedbackSnippetsManager theme={theme} />
+        </TabsContent>
+
+        <TabsContent value="samples">
+          <StudentSamplesList
+            quests={quests}
+            realms={realms}
+            theme={theme}
+          />
+        </TabsContent>
+
+        <TabsContent value="insights">
+          <FeedbackInsights theme={theme} />
         </TabsContent>
       </Tabs>
 

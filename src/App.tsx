@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { ErrorBoundary } from 'react-error-boundary'
 import { ErrorFallback } from '@/components/ErrorFallback'
-import { ThemeProvider, useThemeContext, GameStateProvider, useGameState } from '@/contexts'
+import { ThemeProvider, useThemeContext, GameStateProvider, useGameState, FirebaseProvider } from '@/contexts'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useTouchSwipe } from '@/hooks/use-touch-gestures'
 import { useDialogs } from '@/hooks/use-dialogs'
@@ -307,11 +307,13 @@ function AppContent() {
 function App() {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <ThemeProvider>
-        <GameStateProvider>
-          <AppContent />
-        </GameStateProvider>
-      </ThemeProvider>
+      <FirebaseProvider>
+        <ThemeProvider>
+          <GameStateProvider>
+            <AppContent />
+          </GameStateProvider>
+        </ThemeProvider>
+      </FirebaseProvider>
     </ErrorBoundary>
   )
 }
