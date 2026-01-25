@@ -76,8 +76,6 @@ jobs:
       
       - name: Run tests
         run: npm test --if-present
-        continue-on-error: true
-        # Tests continue on error since test infrastructure may not be fully set up
 
   type-check:
     name: Type Check

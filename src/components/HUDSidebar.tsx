@@ -1,16 +1,16 @@
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { House, User, BookOpen, Target, Sword, Brain, Shield, GraduationCap, ArrowsClockwise, Palette, Trophy, ChalkboardTeacher, Sparkle, ChartBar } from '@phosphor-icons/react'
+import { Sword, Brain, Shield, GraduationCap, ArrowsClockwise, Palette, Trophy, Sparkle } from '@phosphor-icons/react'
 import { Theme, Role, THEME_CONFIGS } from '@/lib/types'
 import { UserProfile } from '@/lib/types'
-import { calculateLevel, getLevelTitle, getXpForNextLevel } from '@/lib/game-utils'
 import { motion } from 'framer-motion'
 import { AvatarDisplay } from '@/components/AvatarDisplay'
 import { DEFAULT_AVATAR } from '@/lib/avatar-options'
 import { SoundSettings } from '@/components/SoundSettings'
+import { useNavigationItems } from '@/hooks/use-navigation-items'
+import { usePlayerStats } from '@/hooks/use-player-stats'
 
 interface HUDSidebarProps {
   profile: UserProfile
@@ -32,13 +32,8 @@ export function HUDSidebar({
   onRoleToggle
 }: HUDSidebarProps) {
   const themeConfig = THEME_CONFIGS[theme]
-  const level = calculateLevel(profile.xp)
-  const levelTitle = getLevelTitle(level, role)
-  const nextLevelXp = getXpForNextLevel(profile.xp)
-  const currentLevelXp = level > 1 ? getXpForNextLevel(profile.xp - 1) : 0
-  const xpInCurrentLevel = profile.xp - currentLevelXp
-  const xpNeededForLevel = nextLevelXp - currentLevelXp
-  const xpProgress = (xpInCurrentLevel / xpNeededForLevel) * 100
+  const navItems = useNavigationItems(theme, role)
+  const { level, levelTitle, xpProgress, xpInCurrentLevel, xpNeededForLevel, xpToNextLevel } = usePlayerStats(profile, role)
 
   const RoleIcon = theme === 'fantasy' ? Sword :
                    theme === 'scifi' ? Brain :
@@ -97,7 +92,7 @@ export function HUDSidebar({
             />
           </div>
           <div className="text-xs text-muted-foreground text-right">
-            {xpNeededForLevel - xpInCurrentLevel} {themeConfig.xpLabel} to level {level + 1}
+            {xpToNextLevel} {themeConfig.xpLabel} to level {level + 1}
           </div>
         </div>
 
@@ -117,90 +112,28 @@ export function HUDSidebar({
       <Separator className="bg-border" />
 
       <nav className="space-y-2 flex-1">
-        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-          <Button
-            variant={currentView === 'world-map' ? 'default' : 'ghost'}
-            className="w-full justify-start gap-3"
-            onClick={() => onNavigate('world-map')}
-          >
-            <House size={20} weight={currentView === 'world-map' ? 'fill' : 'regular'} />
-            World Map
-          </Button>
-        </motion.div>
-        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-          <Button
-            variant={currentView === 'quests' ? 'default' : 'ghost'}
-            className="w-full justify-start gap-3"
-            onClick={() => onNavigate('quests')}
-          >
-            <Target size={20} weight={currentView === 'quests' ? 'fill' : 'regular'} />
-            {themeConfig.questLabel}s
-          </Button>
-        </motion.div>
-        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-          <Button
-            variant={currentView === 'archives' ? 'default' : 'ghost'}
-            className="w-full justify-start gap-3"
-            onClick={() => onNavigate('archives')}
-          >
-            <BookOpen size={20} weight={currentView === 'archives' ? 'fill' : 'regular'} />
-            {themeConfig.archiveLabel}
-          </Button>
-        </motion.div>
-        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-          <Button
-            variant={currentView === 'character' ? 'default' : 'ghost'}
-            className="w-full justify-start gap-3"
-            onClick={() => onNavigate('character')}
-          >
-            <User size={20} weight={currentView === 'character' ? 'fill' : 'regular'} />
-            My Hero
-          </Button>
-        </motion.div>
-        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-          <Button
-            variant={currentView === 'leaderboard' ? 'default' : 'ghost'}
-            className="w-full justify-start gap-3"
-            onClick={() => onNavigate('leaderboard')}
-          >
-            <Trophy size={20} weight={currentView === 'leaderboard' ? 'fill' : 'regular'} />
-            Leaderboard
-          </Button>
-        </motion.div>
-        {role === 'teacher' && (
-          <motion.div 
-            whileHover={{ scale: 1.02 }} 
-            whileTap={{ scale: 0.98 }}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-          >
-            <Button
-              variant={currentView === 'teacher-dashboard' ? 'default' : 'ghost'}
-              className="w-full justify-start gap-3"
-              onClick={() => onNavigate('teacher-dashboard')}
+        {navItems.map((item) => {
+          const Icon = item.icon
+          const isActive = currentView === item.id
+          return (
+            <motion.div
+              key={item.id}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              initial={item.teacherOnly ? { opacity: 0, x: -20 } : undefined}
+              animate={item.teacherOnly ? { opacity: 1, x: 0 } : undefined}
             >
-              <ChalkboardTeacher size={20} weight={currentView === 'teacher-dashboard' ? 'fill' : 'regular'} />
-              Manage
-            </Button>
-          </motion.div>
-        )}
-        {role === 'teacher' && (
-          <motion.div 
-            whileHover={{ scale: 1.02 }} 
-            whileTap={{ scale: 0.98 }}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-          >
-            <Button
-              variant={currentView === 'analytics' ? 'default' : 'ghost'}
-              className="w-full justify-start gap-3"
-              onClick={() => onNavigate('analytics')}
-            >
-              <ChartBar size={20} weight={currentView === 'analytics' ? 'fill' : 'regular'} />
-              Analytics
-            </Button>
-          </motion.div>
-        )}
+              <Button
+                variant={isActive ? 'default' : 'ghost'}
+                className="w-full justify-start gap-3"
+                onClick={() => onNavigate(item.id)}
+              >
+                <Icon size={20} weight={isActive ? 'fill' : 'regular'} />
+                {item.label}
+              </Button>
+            </motion.div>
+          )
+        })}
       </nav>
 
       <Separator className="bg-border" />

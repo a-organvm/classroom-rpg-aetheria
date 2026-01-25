@@ -11,7 +11,13 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
-      exclude: ['node_modules/', 'src/test/', '**/*.test.ts', '**/*.test.tsx']
+      exclude: ['node_modules/', 'src/test/', '**/*.test.ts', '**/*.test.tsx'],
+      thresholds: {
+        lines: 70,
+        functions: 70,
+        branches: 70,
+        statements: 70
+      }
     }
   },
   resolve: {

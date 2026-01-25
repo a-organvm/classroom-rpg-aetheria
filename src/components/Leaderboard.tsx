@@ -1,6 +1,6 @@
+import { useMemo, memo } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Theme, THEME_CONFIGS, UserProfile } from '@/lib/types'
 import { Trophy, Medal, Star, Crown, Sparkle } from '@phosphor-icons/react'
 import { calculateLevel, getLevelTitle } from '@/lib/game-utils'
@@ -14,10 +14,14 @@ interface LeaderboardProps {
   currentUserId: string
 }
 
-export function Leaderboard({ profiles, theme, currentUserId }: LeaderboardProps) {
+export const Leaderboard = memo(function Leaderboard({ profiles, theme, currentUserId }: LeaderboardProps) {
   const themeConfig = THEME_CONFIGS[theme]
-  
-  const sortedProfiles = [...profiles].sort((a, b) => b.xp - a.xp)
+
+  // Memoize sorted profiles to prevent re-sorting on every render
+  const sortedProfiles = useMemo(
+    () => [...profiles].sort((a, b) => b.xp - a.xp),
+    [profiles]
+  )
 
   const getRankIcon = (rank: number) => {
     if (rank === 1) return <Crown size={28} weight="fill" className="text-accent" />
@@ -152,4 +156,4 @@ export function Leaderboard({ profiles, theme, currentUserId }: LeaderboardProps
       )}
     </div>
   )
-}
+})

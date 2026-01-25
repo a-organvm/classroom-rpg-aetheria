@@ -1,0 +1,84 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Build & Development Commands
+
+```bash
+npm run dev          # Start Vite dev server with HMR
+npm run build        # TypeScript compile + Vite production build
+npm run lint         # ESLint for TypeScript/JavaScript
+npm test             # Run Vitest tests
+npm run test:ui      # Vitest with interactive UI
+npm run test:coverage # Generate coverage reports
+```
+
+## Architecture Overview
+
+This is a classroom gamification platform built with React 19, TypeScript, Vite, and Tailwind CSS v4. It uses GitHub Spark for LLM-powered features and Radix UI for accessible components.
+
+### Core Data Model
+
+- **Realm**: Course/subject container with quests
+- **Quest**: Assignment with status (locked → available → in_progress → completed/failed)
+- **UserProfile**: Student or teacher with XP, level, artifacts
+- **Submission**: Quest answer with scores and AI-generated feedback
+- **KnowledgeCrystal**: AI-generated study guide for failed quests
+- **Artifact**: Collectible reward for high-scoring quests
+
+### State Management
+
+- React hooks + `useSandboxKV<T>(key, defaultValue)` for persistent storage
+- `useSandboxKV` wraps GitHub Spark's `useKV` with sandbox isolation
+- Local component state for UI (dialogs, view selection)
+
+### Theme System
+
+Four themes with different terminology via `THEME_CONFIGS`:
+- Fantasy: Game Master/Adventurer, Quest, Glory
+- Cyberpunk: Admin/Operative, Mission, Data
+- Medieval: Lord/Vassal, Decree, Honor
+- Modern: Teacher/Student, Assignment, Points
+
+All UI labels switch based on theme prop passed through components.
+
+### Sandbox Mode
+
+Demo/testing mode activated via `?sandbox=true` or `?demo=true` URL parameter:
+- Data stored with `sandbox-` prefix, isolated from production
+- Pre-populated demo data via `initializeSandboxData()`
+- See `src/lib/sandbox-mode.ts`
+
+### Key Patterns
+
+- **Path aliases**: `@/*` resolves to `src/*`
+- **GitHub Spark LLM**: `window.spark.llm()` for AI content generation with `retryWithBackoff` utility
+- **Sound effects**: `soundEffects` module with mute toggle via `useKV`
+- **Mobile support**: `useIsMobile()`, `useTouchSwipe()` hooks
+- **Input sanitization**: DOMPurify for HTML in Knowledge Crystals
+
+### Testing
+
+Tests in `src/lib/*.test.ts` using Vitest with jsdom environment. Run single test:
+```bash
+npm test -- src/lib/game-utils.test.ts
+```
+
+## Project Structure
+
+```
+src/
+├── components/     # React components (UI primitives in ui/)
+├── hooks/          # Custom hooks (sandbox-kv, theme, mobile, touch)
+├── lib/            # Utilities, types, and tests
+├── assets/         # Static files
+└── styles/         # Global CSS
+
+docs/architecture/  # System design documentation
+```
+
+## Git Workflow
+
+Uses Conventional Commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`
+
+Pre-commit hooks enforce formatting, linting, and secrets detection.

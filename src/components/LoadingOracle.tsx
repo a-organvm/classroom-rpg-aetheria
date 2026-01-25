@@ -20,6 +20,10 @@ export function LoadingOracle({ theme }: LoadingOracleProps) {
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label={`Loading: Consulting the ${themeConfig.oracleLabel}, evaluating your submission`}
     >
       <motion.div
         className="relative"
@@ -31,6 +35,7 @@ export function LoadingOracle({ theme }: LoadingOracleProps) {
           repeat: Infinity,
           ease: 'linear'
         }}
+        aria-hidden="true"
       >
         <motion.div
           className="absolute inset-0 rounded-full bg-primary/20 blur-2xl"
@@ -62,7 +67,7 @@ export function LoadingOracle({ theme }: LoadingOracleProps) {
         <p className="text-sm text-muted-foreground">Evaluating your submission...</p>
       </motion.div>
 
-      <motion.div className="flex gap-2">
+      <motion.div className="flex gap-2" aria-hidden="true">
         {[0, 1, 2].map((i) => (
           <motion.div
             key={i}

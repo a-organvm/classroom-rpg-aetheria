@@ -22,6 +22,9 @@ import type { Realm, Quest, Theme } from '@/lib/types'
 import { THEME_CONFIGS } from '@/lib/types'
 import { generateId } from '@/lib/game-utils'
 import { ExportPackageSchema } from '@/lib/schemas'
+import { sanitizePlainText } from '@/lib/sanitize'
+import { IMPORT_FILE_MAX_SIZE } from '@/lib/constants'
+import { getImportErrorMessage } from '@/lib/error-messages'
 import { z } from 'zod'
 
 interface ExportImportDialogProps {
@@ -101,6 +104,16 @@ export function ExportImportDialog({
 
   const handleImport = () => {
     try {
+      // Validate file size (using byte length of the text)
+      const textSize = new Blob([importText]).size
+      if (textSize > IMPORT_FILE_MAX_SIZE) {
+        throw new Error(`Import data exceeds maximum size of ${Math.round(IMPORT_FILE_MAX_SIZE / 1024)}KB`)
+      }
+
+      if (!importText.trim()) {
+        throw new Error('Please paste import data')
+      }
+
       let parsedJson: unknown
       try {
         parsedJson = JSON.parse(importText)
@@ -120,6 +133,8 @@ export function ExportImportDialog({
       const newRealms = importPackage.realms.map(realm => ({
         ...realm,
         id: generateId(),
+        name: sanitizePlainText(realm.name),
+        description: sanitizePlainText(realm.description),
         createdAt: Date.now()
       }))
 
@@ -131,6 +146,8 @@ export function ExportImportDialog({
         ...quest,
         id: generateId(),
         realmId: realmIdMap.get(quest.realmId) || quest.realmId,
+        name: sanitizePlainText(quest.name),
+        description: sanitizePlainText(quest.description),
         status: 'available' as const,
         createdAt: Date.now()
       }))
@@ -145,9 +162,9 @@ export function ExportImportDialog({
       setImportText('')
       onClose()
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Invalid package format or corrupted data'
-      toast.error('Import failed', {
-        description: errorMessage
+      const errorDetails = getImportErrorMessage(err)
+      toast.error(errorDetails.title, {
+        description: errorDetails.description
       })
     }
   }

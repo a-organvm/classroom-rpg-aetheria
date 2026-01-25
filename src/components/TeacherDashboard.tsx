@@ -8,6 +8,7 @@ import { Quest, Submission, Realm, Theme, THEME_CONFIGS } from '@/lib/types'
 import { Trash, Eye, CheckCircle, XCircle, CalendarBlank, Notepad, ChartBar, Package } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { formatTimeAgo } from '@/lib/game-utils'
+import { QUEST_PASS_THRESHOLD } from '@/lib/constants'
 import { RubricManager, type Rubric } from './RubricManager'
 import { CalendarView } from './CalendarView'
 import { GradingInterface } from './GradingInterface'
@@ -50,8 +51,8 @@ export function TeacherDashboard({
 
   const getQuestStats = (questId: string) => {
     const questSubs = submissions.filter(s => s.questId === questId)
-    const completed = questSubs.filter(s => s.score && s.score >= 70).length
-    const failed = questSubs.filter(s => s.score && s.score < 70).length
+    const completed = questSubs.filter(s => s.score && s.score >= QUEST_PASS_THRESHOLD).length
+    const failed = questSubs.filter(s => s.score && s.score < QUEST_PASS_THRESHOLD).length
     const avgScore = questSubs.length > 0
       ? questSubs.reduce((sum, s) => sum + (s.score || 0), 0) / questSubs.length
       : 0
@@ -80,9 +81,25 @@ export function TeacherDashboard({
   }
 
   const handleGrade = (submissionId: string, score: number, feedback: string, rubricScores?: Record<string, number>) => {
+    // Find the original submission and verify it still exists
     const original = submissions.find(s => s.id === submissionId)
-    if (!original) return
-    
+    if (!original) {
+      toast.error('Submission not found. It may have been deleted.')
+      setGradingSubmission(null)
+      return
+    }
+
+    // Verify the submission hasn't been modified since we started grading
+    // by checking if the content and submittedAt match what we loaded
+    if (gradingSubmission && (
+      gradingSubmission.content !== original.content ||
+      gradingSubmission.submittedAt !== original.submittedAt
+    )) {
+      toast.error('Submission was modified. Please reload and try again.')
+      setGradingSubmission(null)
+      return
+    }
+
     const updatedSubmission: Submission = {
       ...original,
       score,
@@ -90,7 +107,9 @@ export function TeacherDashboard({
       rubricScores,
       evaluatedAt: Date.now()
     }
+
     onUpdateSubmission?.(updatedSubmission)
+    toast.success('Grade saved successfully')
   }
 
   return (
@@ -336,8 +355,8 @@ export function TeacherDashboard({
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <Badge 
-                                variant={(submission.score || 0) >= 70 ? 'default' : 'destructive'}
+                              <Badge
+                                variant={(submission.score || 0) >= QUEST_PASS_THRESHOLD ? 'default' : 'destructive'}
                                 className="text-lg px-3 py-1"
                               >
                                 {submission.score}%

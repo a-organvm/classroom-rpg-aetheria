@@ -1,7 +1,8 @@
+import { XP_LEVEL_THRESHOLDS, RARITY_THRESHOLDS } from './constants'
+
 export function calculateLevel(xp: number): number {
-  const thresholds = [0, 100, 250, 500, 1000, 2000, 4000, 8000]
-  for (let i = thresholds.length - 1; i >= 0; i--) {
-    if (xp >= thresholds[i]) {
+  for (let i = XP_LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
+    if (xp >= XP_LEVEL_THRESHOLDS[i]) {
       return i + 1
     }
   }
@@ -9,9 +10,8 @@ export function calculateLevel(xp: number): number {
 }
 
 export function getXpForNextLevel(currentXp: number): number {
-  const thresholds = [0, 100, 250, 500, 1000, 2000, 4000, 8000, 16000]
   const level = calculateLevel(currentXp)
-  return thresholds[level] || thresholds[thresholds.length - 1]
+  return XP_LEVEL_THRESHOLDS[level] || XP_LEVEL_THRESHOLDS[XP_LEVEL_THRESHOLDS.length - 1]
 }
 
 export function getLevelTitle(level: number, role: 'teacher' | 'student'): string {
@@ -50,9 +50,9 @@ export function generateArtifactName(score: number, questName: string, theme: st
 }
 
 export function getRarityFromScore(score: number): 'common' | 'rare' | 'epic' | 'legendary' {
-  if (score >= 98) return 'legendary'
-  if (score >= 95) return 'epic'
-  if (score >= 90) return 'rare'
+  if (score >= RARITY_THRESHOLDS.legendary) return 'legendary'
+  if (score >= RARITY_THRESHOLDS.epic) return 'epic'
+  if (score >= RARITY_THRESHOLDS.rare) return 'rare'
   return 'common'
 }
 

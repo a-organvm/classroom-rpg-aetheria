@@ -38,3 +38,14 @@ export const ExportPackageSchema = z.object({
   quests: z.array(QuestSchema),
   theme: ThemeSchema,
 });
+
+// LLM response schemas for quest evaluation
+export const EvaluationResponseSchema = z.object({
+  score: z.number().min(0).max(100),
+  feedback: z.string(),
+});
+
+export const RedemptionQuestSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+});

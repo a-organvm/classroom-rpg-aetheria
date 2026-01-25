@@ -9,6 +9,16 @@ import { Quest, QuestType, Theme, Realm } from '@/lib/types'
 import { Plus, Sparkle, FloppyDisk } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { generateId } from '@/lib/game-utils'
+import { sanitizePlainText } from '@/lib/sanitize'
+import {
+  MIN_QUEST_XP,
+  MAX_QUEST_XP,
+  DEFAULT_QUEST_XP,
+  NAME_MIN_LENGTH,
+  NAME_MAX_LENGTH,
+  DESCRIPTION_MIN_LENGTH,
+  DESCRIPTION_MAX_LENGTH
+} from '@/lib/constants'
 
 interface QuestCreatorProps {
   open: boolean
@@ -23,7 +33,7 @@ export function QuestCreator({ open, theme, realmId, realm, onClose, onCreate }:
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [questType, setQuestType] = useState<QuestType>('standard')
-  const [xpValue, setXpValue] = useState(100)
+  const [xpValue, setXpValue] = useState(DEFAULT_QUEST_XP)
   const [isGenerating, setIsGenerating] = useState(false)
 
   const handleGenerate = async () => {
@@ -59,26 +69,47 @@ Return only the description text, no quotes or extra formatting.`
   }
 
   const handleCreate = () => {
-    if (!name.trim()) {
+    const trimmedName = name.trim()
+    const trimmedDescription = description.trim()
+
+    if (!trimmedName) {
       toast.error('Please enter a quest name')
       return
     }
-    if (!description.trim()) {
+    if (trimmedName.length < NAME_MIN_LENGTH) {
+      toast.error(`Name must be at least ${NAME_MIN_LENGTH} characters`)
+      return
+    }
+    if (trimmedName.length > NAME_MAX_LENGTH) {
+      toast.error(`Name must be no more than ${NAME_MAX_LENGTH} characters`)
+      return
+    }
+    if (!trimmedDescription) {
       toast.error('Please enter a description')
       return
     }
-    if (xpValue < 10 || xpValue > 1000) {
-      toast.error('XP value must be between 10 and 1000')
+    if (trimmedDescription.length < DESCRIPTION_MIN_LENGTH) {
+      toast.error(`Description must be at least ${DESCRIPTION_MIN_LENGTH} characters`)
       return
+    }
+    if (trimmedDescription.length > DESCRIPTION_MAX_LENGTH) {
+      toast.error(`Description must be no more than ${DESCRIPTION_MAX_LENGTH} characters`)
+      return
+    }
+
+    // Ensure XP is a positive integer
+    const sanitizedXp = Math.max(MIN_QUEST_XP, Math.min(MAX_QUEST_XP, Math.floor(Math.abs(xpValue) || DEFAULT_QUEST_XP)))
+    if (sanitizedXp !== xpValue) {
+      toast.error(`XP value adjusted to ${sanitizedXp}`)
     }
 
     const newQuest: Quest = {
       id: generateId(),
       realmId,
-      name: name.trim(),
-      description: description.trim(),
+      name: sanitizePlainText(trimmedName),
+      description: sanitizePlainText(trimmedDescription),
       type: questType,
-      xpValue,
+      xpValue: sanitizedXp,
       status: 'available',
       createdAt: Date.now()
     }
@@ -87,7 +118,7 @@ Return only the description text, no quotes or extra formatting.`
     setName('')
     setDescription('')
     setQuestType('standard')
-    setXpValue(100)
+    setXpValue(DEFAULT_QUEST_XP)
     toast.success('Quest created!')
   }
 
@@ -133,11 +164,11 @@ Return only the description text, no quotes or extra formatting.`
               <Input
                 id="quest-xp"
                 type="number"
-                min={10}
-                max={1000}
+                min={MIN_QUEST_XP}
+                max={MAX_QUEST_XP}
                 step={10}
                 value={xpValue}
-                onChange={(e) => setXpValue(parseInt(e.target.value) || 100)}
+                onChange={(e) => setXpValue(parseInt(e.target.value) || DEFAULT_QUEST_XP)}
                 className="glass-panel"
               />
             </div>

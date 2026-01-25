@@ -2,7 +2,7 @@
  * Tests for Sandbox Mode utilities
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
   isSandboxMode,
   enableSandboxMode,
@@ -20,18 +20,38 @@ import {
   SANDBOX_MODE_KEY
 } from './sandbox-mode'
 
+// Create a mock localStorage
+const createMockLocalStorage = () => {
+  let store: Record<string, string> = {}
+  return {
+    getItem: (key: string) => store[key] || null,
+    setItem: (key: string, value: string) => { store[key] = value },
+    removeItem: (key: string) => { delete store[key] },
+    clear: () => { store = {} },
+    get length() { return Object.keys(store).length },
+    key: (index: number) => Object.keys(store)[index] || null
+  }
+}
+
 describe('Sandbox Mode', () => {
+  let mockLocalStorage: ReturnType<typeof createMockLocalStorage>
+
   beforeEach(() => {
-    // Clear localStorage before each test
-    localStorage.clear()
-    
+    // Create fresh mock localStorage for each test
+    mockLocalStorage = createMockLocalStorage()
+    Object.defineProperty(window, 'localStorage', {
+      value: mockLocalStorage,
+      writable: true,
+      configurable: true
+    })
+
     // Clear URL parameters (mock)
     delete (window as any).location
     ;(window as any).location = { search: '' }
   })
 
   afterEach(() => {
-    localStorage.clear()
+    mockLocalStorage.clear()
   })
 
   describe('isSandboxMode', () => {

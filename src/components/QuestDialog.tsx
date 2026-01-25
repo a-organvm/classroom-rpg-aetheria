@@ -7,6 +7,8 @@ import { Quest, Theme, THEME_CONFIGS } from '@/lib/types'
 import { PaperPlaneRight, Sparkle } from '@phosphor-icons/react'
 import { LoadingOracle } from '@/components/LoadingOracle'
 import { toast } from 'sonner'
+import { QUEST_CONTENT_MAX_LENGTH } from '@/lib/constants'
+import { getSubmissionErrorMessage } from '@/lib/error-messages'
 
 interface QuestDialogProps {
   quest: Quest | null
@@ -25,22 +27,34 @@ export function QuestDialog({ quest, theme, open, onClose, onSubmit }: QuestDial
   const themeConfig = THEME_CONFIGS[theme]
 
   const handleSubmit = async () => {
-    if (!content.trim()) {
+    const trimmedContent = content.trim()
+
+    if (!trimmedContent) {
       toast.error('Please enter your submission')
+      return
+    }
+
+    if (trimmedContent.length > QUEST_CONTENT_MAX_LENGTH) {
+      toast.error(`Submission must be no more than ${QUEST_CONTENT_MAX_LENGTH} characters`)
       return
     }
 
     setIsSubmitting(true)
     try {
-      await onSubmit(quest.id, content)
+      await onSubmit(quest.id, trimmedContent)
       setContent('')
       toast.success('Submission sent to the ' + themeConfig.oracleLabel)
     } catch (error) {
-      toast.error('Submission failed')
+      const errorDetails = getSubmissionErrorMessage(error)
+      toast.error(errorDetails.title, {
+        description: errorDetails.description
+      })
     } finally {
       setIsSubmitting(false)
     }
   }
+
+  const isContentTooLong = content.length > QUEST_CONTENT_MAX_LENGTH
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -85,8 +99,9 @@ export function QuestDialog({ quest, theme, open, onClose, onSubmit }: QuestDial
               className="min-h-[150px] md:min-h-[200px] resize-none glass-panel text-sm md:text-base"
               disabled={isSubmitting}
             />
-            <p className="text-xs text-muted-foreground">
-              {content.length} characters
+            <p className={`text-xs ${isContentTooLong ? 'text-destructive' : 'text-muted-foreground'}`}>
+              {content.length} / {QUEST_CONTENT_MAX_LENGTH} characters
+              {isContentTooLong && ' (exceeds limit)'}
             </p>
           </div>
 
@@ -106,7 +121,7 @@ export function QuestDialog({ quest, theme, open, onClose, onSubmit }: QuestDial
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={isSubmitting || !content.trim()}
+              disabled={isSubmitting || !content.trim() || isContentTooLong}
               className="flex-1 gap-2"
               size="lg"
             >

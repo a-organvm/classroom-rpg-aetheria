@@ -8,6 +8,14 @@ import { Realm, Theme } from '@/lib/types'
 import { Plus, Sparkle, FloppyDisk } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { generateId } from '@/lib/game-utils'
+import { sanitizePlainText } from '@/lib/sanitize'
+import {
+  NAME_MIN_LENGTH,
+  NAME_MAX_LENGTH,
+  DESCRIPTION_MIN_LENGTH,
+  DESCRIPTION_MAX_LENGTH
+} from '@/lib/constants'
+import { getLLMErrorMessage } from '@/lib/error-messages'
 
 interface RealmCreatorProps {
   open: boolean
@@ -56,7 +64,10 @@ Return only the description text, no quotes or extra formatting.`
       setDescription(generatedDescription.trim())
       toast.success('Description generated!')
     } catch (error) {
-      toast.error('Failed to generate description')
+      const errorDetails = getLLMErrorMessage(error)
+      toast.error(errorDetails.title, {
+        description: errorDetails.description
+      })
       console.error(error)
     } finally {
       setIsGenerating(false)
@@ -64,19 +75,38 @@ Return only the description text, no quotes or extra formatting.`
   }
 
   const handleCreate = () => {
-    if (!name.trim()) {
+    const trimmedName = name.trim()
+    const trimmedDescription = description.trim()
+
+    if (!trimmedName) {
       toast.error('Please enter a realm name')
       return
     }
-    if (!description.trim()) {
+    if (trimmedName.length < NAME_MIN_LENGTH) {
+      toast.error(`Name must be at least ${NAME_MIN_LENGTH} characters`)
+      return
+    }
+    if (trimmedName.length > NAME_MAX_LENGTH) {
+      toast.error(`Name must be no more than ${NAME_MAX_LENGTH} characters`)
+      return
+    }
+    if (!trimmedDescription) {
       toast.error('Please enter a description')
+      return
+    }
+    if (trimmedDescription.length < DESCRIPTION_MIN_LENGTH) {
+      toast.error(`Description must be at least ${DESCRIPTION_MIN_LENGTH} characters`)
+      return
+    }
+    if (trimmedDescription.length > DESCRIPTION_MAX_LENGTH) {
+      toast.error(`Description must be no more than ${DESCRIPTION_MAX_LENGTH} characters`)
       return
     }
 
     const newRealm: Realm = {
       id: generateId(),
-      name: name.trim(),
-      description: description.trim(),
+      name: sanitizePlainText(trimmedName),
+      description: sanitizePlainText(trimmedDescription),
       color: selectedColor,
       createdAt: Date.now()
     }
