@@ -5,7 +5,7 @@
  * informing users that they are exploring with demo data.
  */
 
-import { AlertCircle, X, RefreshCw } from '@phosphor-icons/react'
+import { Warning, X, ArrowsClockwise } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { isSandboxMode, resetSandboxData, disableSandboxMode } from '@/lib/sandbox-mode'
 import { useState, useEffect } from 'react'
@@ -57,7 +57,7 @@ export function SandboxBanner() {
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 flex-1">
-              <AlertCircle className="h-6 w-6 flex-shrink-0" weight="fill" />
+              <Warning className="h-6 w-6 flex-shrink-0" weight="fill" />
               <div className="flex-1">
                 <p className="font-semibold text-sm md:text-base">
                   🏖️ Sandbox Mode Active
@@ -75,7 +75,7 @@ export function SandboxBanner() {
                 size="sm"
                 className="text-white hover:bg-white/20 hidden sm:flex"
               >
-                <RefreshCw className="h-4 w-4 mr-1" />
+                <ArrowsClockwise className="h-4 w-4 mr-1" />
                 Reset Demo
               </Button>
 
