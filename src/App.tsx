@@ -6,6 +6,8 @@ import { useIsMobile } from '@/hooks/use-mobile'
 import { useTouchSwipe } from '@/hooks/use-touch-gestures'
 import { useDialogs } from '@/hooks/use-dialogs'
 import { useQuestEvaluation } from '@/hooks/use-quest-evaluation'
+import { useThematicVariants } from '@/hooks/use-thematic-variants'
+import { useVoting } from '@/hooks/use-voting'
 import { SandboxBanner } from '@/components/SandboxBanner'
 import { HUDSidebar } from '@/components/HUDSidebar'
 import { MobileNav } from '@/components/MobileNav'
@@ -22,7 +24,7 @@ import { NameDialog } from '@/components/NameDialog'
 import { Toaster } from '@/components/ui/sonner'
 import { isSandboxMode } from '@/lib/sandbox-mode'
 import { soundEffects } from '@/lib/sound-effects'
-import type { Realm, Quest } from '@/lib/types'
+import type { Realm, Quest, ThematicInterest, LearningStyle } from '@/lib/types'
 
 function AppContent() {
   const { theme, role, themeConfig, cycleTheme, toggleRole, setRole } = useThemeContext()
@@ -68,6 +70,60 @@ function AppContent() {
     selectQuest,
     deselectQuest
   } = useDialogs()
+
+  // Thematic variants for personalization
+  const { getPreferences, setPreferences, getVariantsForQuest, getRecommendedVariant } = useThematicVariants()
+
+  // Voting system for parent portal
+  const { votes, castVote, getPendingVotes, getVotesByStudent } = useVoting()
+
+  // Get current user's preferences
+  const currentPreferences = useMemo(() => {
+    if (profile?.id) {
+      return getPreferences(profile.id)
+    }
+    return undefined
+  }, [profile?.id, getPreferences])
+
+  // Handle updating preferences
+  const handleUpdatePreferences = useCallback((
+    primaryInterest: ThematicInterest,
+    secondaryInterest?: ThematicInterest,
+    learningStyle?: LearningStyle
+  ) => {
+    if (profile?.id) {
+      setPreferences(profile.id, primaryInterest, secondaryInterest, learningStyle)
+    }
+  }, [profile?.id, setPreferences])
+
+  // Demo linked student for parent role (first student profile or fallback to current)
+  const linkedStudent = useMemo(() => {
+    if (role === 'parent') {
+      // In sandbox mode, use the first student-like profile or fall back to current
+      const studentProfile = allProfiles.find(p => p.role === 'student')
+      return studentProfile || profile
+    }
+    return undefined
+  }, [role, allProfiles, profile])
+
+  // Votes for parent portal
+  const pendingVotesForParent = useMemo(() => {
+    if (role === 'parent' && linkedStudent) {
+      return getPendingVotes('parent', linkedStudent.id)
+    }
+    return []
+  }, [role, linkedStudent, getPendingVotes])
+
+  const voteHistoryForParent = useMemo(() => {
+    if (role === 'parent' && linkedStudent) {
+      return getVotesByStudent(linkedStudent.id).filter(v => v.status !== 'pending')
+    }
+    return []
+  }, [role, linkedStudent, getVotesByStudent])
+
+  const handleCastParentVote = useCallback((voteId: string, optionId: string) => {
+    castVote(voteId, 'parent', optionId)
+  }, [castVote])
 
   const [currentView, setCurrentView] = useState('world-map')
   const [selectedRealmId, setSelectedRealmId] = useState<string | null>(null)
@@ -154,6 +210,18 @@ function AppContent() {
     () => quests.find(q => q.id === dialogState.selectedQuestId) || null,
     [quests, dialogState.selectedQuestId]
   )
+
+  // Get variants for selected quest
+  const selectedQuestVariants = useMemo(() => {
+    if (!selectedQuest) return []
+    return getVariantsForQuest(selectedQuest.id)
+  }, [selectedQuest, getVariantsForQuest])
+
+  // Get recommended variant for selected quest based on student preferences
+  const recommendedQuestVariant = useMemo(() => {
+    if (!selectedQuest || !profile?.id) return undefined
+    return getRecommendedVariant(selectedQuest.id, profile.id)
+  }, [selectedQuest, profile?.id, getRecommendedVariant])
 
   // Touch swipe navigation
   const viewOrder = ['world-map', 'quests', 'archives', 'character', 'leaderboard', 'voting']
@@ -255,6 +323,12 @@ function AppContent() {
           onImportQuests={importQuests}
           onCreateRealm={openRealmCreator}
           onCreateQuest={openQuestCreator}
+          currentPreferences={currentPreferences}
+          onUpdatePreferences={handleUpdatePreferences}
+          linkedStudent={linkedStudent}
+          pendingVotes={pendingVotesForParent}
+          voteHistory={voteHistoryForParent}
+          onCastParentVote={handleCastParentVote}
         />
       </main>
 
@@ -264,6 +338,9 @@ function AppContent() {
         open={!!dialogState.selectedQuestId}
         onClose={deselectQuest}
         onSubmit={handleQuestSubmit}
+        variants={selectedQuestVariants}
+        studentPreferences={currentPreferences}
+        recommendedVariant={recommendedQuestVariant}
       />
 
       {dialogState.isEditingRealms && (

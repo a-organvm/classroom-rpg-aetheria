@@ -44,6 +44,24 @@ describe('useNavigationItems', () => {
     })
   })
 
+  describe('for parents', () => {
+    it('should return only parent-portal and voting items', () => {
+      const { result } = renderHook(() => useNavigationItems('fantasy', 'parent'))
+
+      const ids = result.current.map(item => item.id)
+      expect(ids).toContain('parent-portal')
+      expect(ids).toContain('voting')
+      expect(ids).not.toContain('world-map')
+      expect(ids).not.toContain('quests')
+      expect(ids).not.toContain('teacher-dashboard')
+    })
+
+    it('should return 2 items for parents', () => {
+      const { result } = renderHook(() => useNavigationItems('fantasy', 'parent'))
+      expect(result.current.length).toBe(2)
+    })
+  })
+
   describe('theme-specific labels', () => {
     it('should use fantasy theme labels', () => {
       const { result } = renderHook(() => useNavigationItems('fantasy', 'student'))

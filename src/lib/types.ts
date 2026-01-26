@@ -1,5 +1,5 @@
 export type Theme = 'fantasy' | 'scifi' | 'medieval' | 'modern'
-export type Role = 'teacher' | 'student'
+export type Role = 'teacher' | 'student' | 'parent'
 
 export interface ThemeConfig {
   name: string
@@ -82,6 +82,7 @@ export interface Quest {
   dueDate?: number
   status: QuestStatus
   prerequisiteIds?: string[]
+  standardIds?: string[]
   createdAt: number
 }
 

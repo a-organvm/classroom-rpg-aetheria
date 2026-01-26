@@ -7,7 +7,8 @@ import {
   Trophy,
   ChalkboardTeacher,
   ChartBar,
-  Handshake
+  Handshake,
+  GraduationCap
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import { Theme, Role, THEME_CONFIGS } from '@/lib/types'
@@ -17,6 +18,7 @@ export interface NavigationItem {
   label: string
   icon: Icon
   teacherOnly?: boolean
+  parentOnly?: boolean
 }
 
 /**
@@ -27,6 +29,14 @@ export function useNavigationItems(theme: Theme, role: Role): NavigationItem[] {
   const themeConfig = THEME_CONFIGS[theme]
 
   return useMemo(() => {
+    // Parent gets a simplified navigation
+    if (role === 'parent') {
+      return [
+        { id: 'parent-portal', label: 'Parent Portal', icon: GraduationCap },
+        { id: 'voting', label: 'Voting', icon: Handshake }
+      ]
+    }
+
     const items: NavigationItem[] = [
       { id: 'world-map', label: 'World Map', icon: House },
       { id: 'quests', label: `${themeConfig.questLabel}s`, icon: Target },

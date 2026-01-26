@@ -1,14 +1,27 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { Quest, Theme, THEME_CONFIGS } from '@/lib/types'
-import { PaperPlaneRight, Sparkle } from '@phosphor-icons/react'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Quest, Theme, THEME_CONFIGS, ThematicVariant, StudentPreferences, ThematicInterest } from '@/lib/types'
+import { PaperPlaneRight, Sparkle, Star, ArrowSquareOut } from '@phosphor-icons/react'
 import { LoadingOracle } from '@/components/LoadingOracle'
 import { toast } from 'sonner'
 import { QUEST_CONTENT_MAX_LENGTH } from '@/lib/constants'
 import { getSubmissionErrorMessage } from '@/lib/error-messages'
+
+const INTEREST_EMOJIS: Record<ThematicInterest, string> = {
+  sports: '\u26BD',
+  science: '\uD83D\uDD2C',
+  arts: '\uD83C\uDFA8',
+  technology: '\uD83D\uDCBB',
+  nature: '\uD83C\uDF3F',
+  'social-justice': '\u270A',
+  business: '\uD83D\uDCCA',
+  general: '\uD83D\uDCDA'
+}
 
 interface QuestDialogProps {
   quest: Quest | null
@@ -16,11 +29,45 @@ interface QuestDialogProps {
   open: boolean
   onClose: () => void
   onSubmit: (questId: string, content: string) => Promise<void>
+  variants?: ThematicVariant[]
+  studentPreferences?: StudentPreferences
+  recommendedVariant?: ThematicVariant
 }
 
-export function QuestDialog({ quest, theme, open, onClose, onSubmit }: QuestDialogProps) {
+export function QuestDialog({
+  quest,
+  theme,
+  open,
+  onClose,
+  onSubmit,
+  variants,
+  studentPreferences,
+  recommendedVariant
+}: QuestDialogProps) {
   const [content, setContent] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null)
+
+  // Determine which variant to show
+  const activeVariant = useMemo(() => {
+    if (!variants || variants.length === 0) return null
+
+    // If user selected one, use that
+    if (selectedVariantId) {
+      return variants.find(v => v.id === selectedVariantId) || null
+    }
+
+    // Use recommended variant if available
+    if (recommendedVariant) {
+      return recommendedVariant
+    }
+
+    // Default to general or first variant
+    return variants.find(v => v.interestArea === 'general') || variants[0]
+  }, [variants, selectedVariantId, recommendedVariant])
+
+  // Check if current variant is recommended
+  const isRecommendedActive = activeVariant && recommendedVariant && activeVariant.id === recommendedVariant.id
 
   if (!quest) return null
 
@@ -72,11 +119,81 @@ export function QuestDialog({ quest, theme, open, onClose, onSubmit }: QuestDial
         </DialogHeader>
 
         <div className="space-y-4 md:space-y-6 mt-4">
-          <div className="space-y-2">
-            <h4 className="font-semibold text-xs md:text-sm uppercase tracking-wide text-muted-foreground">Quest Briefing</h4>
-            <div className="glass-panel p-3 md:p-4 bg-muted/20">
-              <p className="text-sm md:text-base text-foreground/90 leading-relaxed">{quest.description}</p>
+          {/* Variant Selector - only show if variants exist */}
+          {variants && variants.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold text-xs md:text-sm uppercase tracking-wide text-muted-foreground">
+                  Choose Your Version
+                </h4>
+                {isRecommendedActive && (
+                  <Badge variant="default" className="gap-1 text-xs">
+                    <Star size={12} weight="fill" />
+                    Personalized for you
+                  </Badge>
+                )}
+              </div>
+              <Tabs
+                value={activeVariant?.interestArea || 'general'}
+                onValueChange={(value) => {
+                  const variant = variants.find(v => v.interestArea === value)
+                  if (variant) setSelectedVariantId(variant.id)
+                }}
+              >
+                <TabsList className="w-full flex-wrap h-auto gap-1 p-1">
+                  {variants.map(variant => (
+                    <TabsTrigger
+                      key={variant.id}
+                      value={variant.interestArea}
+                      className="gap-1 text-xs px-2 py-1"
+                    >
+                      <span>{INTEREST_EMOJIS[variant.interestArea]}</span>
+                      <span className="hidden sm:inline capitalize">
+                        {variant.interestArea.replace('-', ' ')}
+                      </span>
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
             </div>
+          )}
+
+          {/* Quest Briefing - shows variant content if available */}
+          <div className="space-y-2">
+            <h4 className="font-semibold text-xs md:text-sm uppercase tracking-wide text-muted-foreground">
+              {activeVariant ? activeVariant.title : 'Quest Briefing'}
+            </h4>
+            <div className="glass-panel p-3 md:p-4 bg-muted/20">
+              {activeVariant ? (
+                <ScrollArea className="max-h-[200px]">
+                  <p className="text-sm md:text-base text-foreground/90 leading-relaxed">
+                    {activeVariant.content}
+                  </p>
+                </ScrollArea>
+              ) : (
+                <p className="text-sm md:text-base text-foreground/90 leading-relaxed">
+                  {quest.description}
+                </p>
+              )}
+            </div>
+
+            {/* Variant Resources */}
+            {activeVariant && activeVariant.resources && activeVariant.resources.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {activeVariant.resources.map((resource, i) => (
+                  <Button
+                    key={i}
+                    variant="outline"
+                    size="sm"
+                    className="gap-1 text-xs"
+                    onClick={() => window.open(resource, '_blank')}
+                  >
+                    <ArrowSquareOut size={12} />
+                    Resource {i + 1}
+                  </Button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-3 md:gap-4 flex-wrap">

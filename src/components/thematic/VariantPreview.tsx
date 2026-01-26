@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import type { ThematicVariant, ThematicInterest } from '@/lib/types'
-import { Eye, ExternalLink, Copy, Check } from '@phosphor-icons/react'
+import { Eye, ArrowSquareOut, Copy, Check } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
@@ -161,7 +161,7 @@ export function VariantPreview({ questName, variants, className }: VariantPrevie
                           className="gap-1"
                           onClick={() => window.open(resource, '_blank')}
                         >
-                          <ExternalLink size={12} />
+                          <ArrowSquareOut size={12} />
                           Resource {i + 1}
                         </Button>
                       ))}

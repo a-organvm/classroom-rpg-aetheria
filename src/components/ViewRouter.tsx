@@ -14,6 +14,7 @@ import { ConstellationView } from '@/components/ConstellationView'
 import { TeacherDashboard } from '@/components/TeacherDashboard'
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard'
 import { VotingView } from '@/components/VotingView'
+import { ParentPortal } from '@/components/parent/ParentPortal'
 import { Error3DFallback, ErrorChartFallback } from '@/components/ErrorFallback'
 import type {
   Theme,
@@ -24,7 +25,11 @@ import type {
   Submission,
   KnowledgeCrystal,
   UserProfile,
-  AvatarCustomization
+  AvatarCustomization,
+  StudentPreferences,
+  ThematicInterest,
+  LearningStyle,
+  ThreeWayVote
 } from '@/lib/types'
 
 interface ViewRouterProps {
@@ -53,6 +58,18 @@ interface ViewRouterProps {
   onImportQuests: (quests: Quest[]) => void
   onCreateRealm: () => void
   onCreateQuest: () => void
+  // Preferences
+  currentPreferences?: StudentPreferences
+  onUpdatePreferences?: (
+    primaryInterest: ThematicInterest,
+    secondaryInterest?: ThematicInterest,
+    learningStyle?: LearningStyle
+  ) => void
+  // Parent portal
+  linkedStudent?: UserProfile
+  pendingVotes?: ThreeWayVote[]
+  voteHistory?: ThreeWayVote[]
+  onCastParentVote?: (voteId: string, optionId: string) => void
 }
 
 const DefaultErrorFallback = ({ resetErrorBoundary }: { resetErrorBoundary: () => void }) => (
@@ -89,7 +106,13 @@ export const ViewRouter = memo(function ViewRouter({
   onImportRealms,
   onImportQuests,
   onCreateRealm,
-  onCreateQuest
+  onCreateQuest,
+  currentPreferences,
+  onUpdatePreferences,
+  linkedStudent,
+  pendingVotes,
+  voteHistory,
+  onCastParentVote
 }: ViewRouterProps) {
   return (
     <AnimatePresence mode="wait">
@@ -256,6 +279,8 @@ export const ViewRouter = memo(function ViewRouter({
             profile={profile}
             theme={theme}
             onUpdateAvatar={onUpdateAvatar}
+            currentPreferences={currentPreferences}
+            onUpdatePreferences={onUpdatePreferences}
           />
         </motion.div>
       )}
@@ -333,6 +358,27 @@ export const ViewRouter = memo(function ViewRouter({
               role={role}
               profileId={profile.id}
               quests={quests}
+            />
+          </ErrorBoundary>
+        </motion.div>
+      )}
+
+      {currentView === 'parent-portal' && role === 'parent' && linkedStudent && (
+        <motion.div
+          key="parent-portal"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="p-4 md:p-8"
+        >
+          <ErrorBoundary FallbackComponent={DefaultErrorFallback}>
+            <ParentPortal
+              student={linkedStudent}
+              pendingVotes={pendingVotes || []}
+              voteHistory={voteHistory || []}
+              recentSubmissions={submissions.filter(s => s.studentId === linkedStudent.id)}
+              onCastVote={onCastParentVote || (() => {})}
             />
           </ErrorBoundary>
         </motion.div>

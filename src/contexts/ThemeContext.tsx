@@ -36,8 +36,10 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   }
 
   const toggleRole = () => {
-    const newRole = currentRole === 'teacher' ? 'student' : 'teacher'
-    setRole(newRole)
+    const roles: Role[] = ['teacher', 'student', 'parent']
+    const currentIndex = roles.indexOf(currentRole)
+    const nextRole = roles[(currentIndex + 1) % roles.length]
+    setRole(nextRole)
   }
 
   const value = useMemo<ThemeContextValue>(

@@ -4,13 +4,19 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Quest, QuestType, Theme, Realm } from '@/lib/types'
-import { Plus, Sparkle, FloppyDisk } from '@phosphor-icons/react'
+import { Plus, Sparkle, FloppyDisk, CaretDown, Target, MagnifyingGlass, X } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { generateId } from '@/lib/game-utils'
 import { sanitizePlainText } from '@/lib/sanitize'
 import { sanitizeLLMInput } from '@/lib/utils'
+import { useStandards } from '@/hooks/use-standards'
+import { ALL_STANDARDS } from '@/lib/standards'
 import {
   MIN_QUEST_XP,
   MAX_QUEST_XP,
@@ -36,6 +42,33 @@ export function QuestCreator({ open, theme, realmId, realm, onClose, onCreate }:
   const [questType, setQuestType] = useState<QuestType>('standard')
   const [xpValue, setXpValue] = useState(DEFAULT_QUEST_XP)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [selectedStandardIds, setSelectedStandardIds] = useState<string[]>([])
+  const [standardsOpen, setStandardsOpen] = useState(false)
+  const [standardsSearch, setStandardsSearch] = useState('')
+
+  const { addAlignment } = useStandards()
+
+  // Filter standards by search
+  const filteredStandards = ALL_STANDARDS.filter(standard => {
+    if (!standardsSearch) return true
+    const query = standardsSearch.toLowerCase()
+    return (
+      standard.code.toLowerCase().includes(query) ||
+      standard.description.toLowerCase().includes(query)
+    )
+  }).slice(0, 20) // Limit for performance
+
+  const handleToggleStandard = (standardId: string) => {
+    setSelectedStandardIds(prev =>
+      prev.includes(standardId)
+        ? prev.filter(id => id !== standardId)
+        : [...prev, standardId]
+    )
+  }
+
+  const handleRemoveStandard = (standardId: string) => {
+    setSelectedStandardIds(prev => prev.filter(id => id !== standardId))
+  }
 
   const handleGenerate = async () => {
     if (!name.trim()) {
@@ -108,22 +141,31 @@ Return only the description text, no quotes or extra formatting.`
       toast.error(`XP value adjusted to ${sanitizedXp}`)
     }
 
+    const questId = generateId()
     const newQuest: Quest = {
-      id: generateId(),
+      id: questId,
       realmId,
       name: sanitizePlainText(trimmedName),
       description: sanitizePlainText(trimmedDescription),
       type: questType,
       xpValue: sanitizedXp,
       status: 'available',
+      standardIds: selectedStandardIds.length > 0 ? selectedStandardIds : undefined,
       createdAt: Date.now()
     }
+
+    // Add alignments for each selected standard
+    selectedStandardIds.forEach(standardId => {
+      addAlignment(questId, standardId, 'full')
+    })
 
     onCreate(newQuest)
     setName('')
     setDescription('')
     setQuestType('standard')
     setXpValue(DEFAULT_QUEST_XP)
+    setSelectedStandardIds([])
+    setStandardsSearch('')
     toast.success('Quest created!')
   }
 
@@ -202,6 +244,112 @@ Return only the description text, no quotes or extra formatting.`
               disabled={isGenerating}
             />
           </div>
+
+          {/* Learning Standards (Optional) */}
+          <Collapsible open={standardsOpen} onOpenChange={setStandardsOpen}>
+            <CollapsibleTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full justify-between gap-2"
+              >
+                <div className="flex items-center gap-2">
+                  <Target size={18} />
+                  <span>Learning Standards (Optional)</span>
+                  {selectedStandardIds.length > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      {selectedStandardIds.length} selected
+                    </Badge>
+                  )}
+                </div>
+                <CaretDown
+                  size={18}
+                  className={`transition-transform ${standardsOpen ? 'rotate-180' : ''}`}
+                />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-3 space-y-3">
+              {/* Selected Standards */}
+              {selectedStandardIds.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {selectedStandardIds.map(id => {
+                    const standard = ALL_STANDARDS.find(s => s.id === id)
+                    if (!standard) return null
+                    return (
+                      <Badge
+                        key={id}
+                        variant="secondary"
+                        className="gap-1 pr-1"
+                      >
+                        {standard.code}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveStandard(id)}
+                          className="ml-1 hover:bg-muted rounded-full p-0.5"
+                        >
+                          <X size={12} />
+                        </button>
+                      </Badge>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Search */}
+              <div className="relative">
+                <MagnifyingGlass
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+                <Input
+                  placeholder="Search standards..."
+                  value={standardsSearch}
+                  onChange={(e) => setStandardsSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+
+              {/* Standards List */}
+              <ScrollArea className="h-[200px] border rounded-lg">
+                <div className="p-2 space-y-1">
+                  {filteredStandards.map(standard => {
+                    const isSelected = selectedStandardIds.includes(standard.id)
+                    return (
+                      <div
+                        key={standard.id}
+                        className={`
+                          p-2 rounded cursor-pointer flex items-start gap-2 transition-colors
+                          ${isSelected ? 'bg-accent/20' : 'hover:bg-muted/50'}
+                        `}
+                        onClick={() => handleToggleStandard(standard.id)}
+                      >
+                        <Checkbox
+                          checked={isSelected}
+                          className="mt-0.5"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium text-sm">{standard.code}</span>
+                            <Badge variant="outline" className="text-[10px]">
+                              {standard.framework.toUpperCase()}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground line-clamp-2">
+                            {standard.description}
+                          </p>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {filteredStandards.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No standards found
+                    </p>
+                  )}
+                </div>
+              </ScrollArea>
+            </CollapsibleContent>
+          </Collapsible>
 
           {questType === 'boss' && (
             <div className="glass-panel p-4 bg-destructive/10 border-2 border-destructive">

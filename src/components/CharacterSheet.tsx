@@ -3,11 +3,12 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
-import { UserProfile, Theme, THEME_CONFIGS, Artifact } from '@/lib/types'
+import { UserProfile, Theme, THEME_CONFIGS, Artifact, StudentPreferences, ThematicInterest, LearningStyle, THEMATIC_INTERESTS } from '@/lib/types'
 import { calculateLevel, getLevelTitle, getXpForNextLevel } from '@/lib/game-utils'
-import { Sparkle, Star, TrendUp, Pencil } from '@phosphor-icons/react'
+import { Sparkle, Star, TrendUp, Pencil, Sliders } from '@phosphor-icons/react'
 import { AvatarDisplay } from '@/components/AvatarDisplay'
 import { AvatarEditor } from '@/components/AvatarEditor'
+import { PreferencesModal } from '@/components/PreferencesModal'
 import { DEFAULT_AVATAR } from '@/lib/avatar-options'
 import type { AvatarCustomization } from '@/lib/types'
 
@@ -15,10 +16,17 @@ interface CharacterSheetProps {
   profile: UserProfile
   theme: Theme
   onUpdateAvatar?: (avatar: AvatarCustomization) => void
+  currentPreferences?: StudentPreferences
+  onUpdatePreferences?: (
+    primaryInterest: ThematicInterest,
+    secondaryInterest?: ThematicInterest,
+    learningStyle?: LearningStyle
+  ) => void
 }
 
-export function CharacterSheet({ profile, theme, onUpdateAvatar }: CharacterSheetProps) {
+export function CharacterSheet({ profile, theme, onUpdateAvatar, currentPreferences, onUpdatePreferences }: CharacterSheetProps) {
   const [isEditingAvatar, setIsEditingAvatar] = useState(false)
+  const [isEditingPreferences, setIsEditingPreferences] = useState(false)
   const themeConfig = THEME_CONFIGS[theme]
   const level = calculateLevel(profile.xp)
   const levelTitle = getLevelTitle(level, profile.role)
@@ -92,6 +100,28 @@ export function CharacterSheet({ profile, theme, onUpdateAvatar }: CharacterShee
                 <span>{nextLevelXp - profile.xp} {themeConfig.xpLabel} to next level</span>
               </div>
             </div>
+
+            {/* Personalization Settings Button */}
+            {onUpdatePreferences && profile.role === 'student' && (
+              <div className="pt-4 border-t border-border">
+                <Button
+                  variant="outline"
+                  className="gap-2 w-full"
+                  onClick={() => setIsEditingPreferences(true)}
+                >
+                  <Sliders size={18} />
+                  Personalization Settings
+                </Button>
+                {currentPreferences && (
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                    {THEMATIC_INTERESTS.find(i => i.value === currentPreferences.primaryInterest)?.label || 'Not set'}
+                    {currentPreferences.secondaryInterest && (
+                      <> + {THEMATIC_INTERESTS.find(i => i.value === currentPreferences.secondaryInterest)?.label}</>
+                    )}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -147,6 +177,15 @@ export function CharacterSheet({ profile, theme, onUpdateAvatar }: CharacterShee
           theme={theme}
           onClose={() => setIsEditingAvatar(false)}
           onSave={handleSaveAvatar}
+        />
+      )}
+
+      {onUpdatePreferences && (
+        <PreferencesModal
+          open={isEditingPreferences}
+          currentPreferences={currentPreferences}
+          onClose={() => setIsEditingPreferences(false)}
+          onSave={onUpdatePreferences}
         />
       )}
     </div>
