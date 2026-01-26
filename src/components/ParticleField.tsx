@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useMotionConfig } from '@/hooks/use-reduced-motion'
 
 interface Particle {
   x: number
@@ -18,8 +19,12 @@ export function ParticleField({ count = 50, speed = 0.3 }: ParticleFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const particlesRef = useRef<Particle[]>([])
   const dimensionsRef = useRef({ width: 0, height: 0 })
+  const { shouldAnimate } = useMotionConfig()
 
   useEffect(() => {
+    // Skip animation setup entirely when reduced motion is preferred
+    if (!shouldAnimate) return
+
     const canvas = canvasRef.current
     if (!canvas) return
 
@@ -100,7 +105,12 @@ export function ParticleField({ count = 50, speed = 0.3 }: ParticleFieldProps) {
       cancelAnimationFrame(animationId)
       window.removeEventListener('resize', updateDimensions)
     }
-  }, [count, speed])
+  }, [count, speed, shouldAnimate])
+
+  // Return null when reduced motion is preferred (no particles at all)
+  if (!shouldAnimate) {
+    return null
+  }
 
   return (
     <canvas

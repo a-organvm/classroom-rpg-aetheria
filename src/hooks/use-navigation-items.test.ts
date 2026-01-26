@@ -17,9 +17,15 @@ describe('useNavigationItems', () => {
       expect(ids).not.toContain('analytics')
     })
 
-    it('should return 6 items for students', () => {
+    it('should return 7 items for students', () => {
       const { result } = renderHook(() => useNavigationItems('fantasy', 'student'))
-      expect(result.current.length).toBe(6)
+      expect(result.current.length).toBe(7)
+    })
+
+    it('should include calendar for students', () => {
+      const { result } = renderHook(() => useNavigationItems('fantasy', 'student'))
+      const ids = result.current.map(item => item.id)
+      expect(ids).toContain('calendar')
     })
 
     it('should include voting for students', () => {
@@ -38,9 +44,15 @@ describe('useNavigationItems', () => {
       expect(ids).toContain('analytics')
     })
 
-    it('should return 8 items for teachers', () => {
+    it('should return 9 items for teachers', () => {
       const { result } = renderHook(() => useNavigationItems('fantasy', 'teacher'))
-      expect(result.current.length).toBe(8)
+      expect(result.current.length).toBe(9)
+    })
+
+    it('should include calendar for teachers', () => {
+      const { result } = renderHook(() => useNavigationItems('fantasy', 'teacher'))
+      const ids = result.current.map(item => item.id)
+      expect(ids).toContain('calendar')
     })
   })
 

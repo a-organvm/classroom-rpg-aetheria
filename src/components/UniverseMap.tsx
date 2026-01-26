@@ -7,11 +7,14 @@ import { SafeCanvasWrapper } from './SafeCanvas'
 import { use3DTouchControls } from '@/hooks/use-3d-touch-controls'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { MobileControlsHint } from './MobileControlsHint'
+import { Button } from '@/components/ui/button'
+import { SquaresFour } from '@phosphor-icons/react'
 
 interface UniverseMapProps {
   realms: Realm[]
   theme: Theme
   onRealmClick: (realmId: string) => void
+  onToggleTo2D?: () => void
 }
 
 interface PlanetProps {
@@ -205,7 +208,7 @@ function CameraController({ onControlsReady }: CameraControllerProps) {
   )
 }
 
-interface SceneProps extends Omit<UniverseMapProps, 'theme'> {
+interface SceneProps extends Omit<UniverseMapProps, 'theme' | 'onToggleTo2D'> {
   theme: Theme
   onControlsReady?: (controls: any) => void
 }
@@ -308,7 +311,7 @@ function Scene({ realms, onRealmClick, theme, onControlsReady }: SceneProps) {
   )
 }
 
-export function UniverseMap({ realms, theme, onRealmClick }: UniverseMapProps) {
+export function UniverseMap({ realms, theme, onRealmClick, onToggleTo2D }: UniverseMapProps) {
   const [isReady, setIsReady] = useState(false)
   const [hasError, setHasError] = useState(false)
   const mountedRef = useRef(true)
@@ -316,6 +319,25 @@ export function UniverseMap({ realms, theme, onRealmClick }: UniverseMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const controlsRef = useRef<any>(null)
   const isMobile = useIsMobile()
+
+  // Connect 3D touch controls for mobile pinch-to-zoom and double-tap gestures
+  use3DTouchControls(containerRef, {
+    onPinchZoom: (delta: number) => {
+      if (controlsRef.current) {
+        const camera = controlsRef.current.object
+        const direction = new THREE.Vector3()
+        camera.getWorldDirection(direction)
+        // Invert delta for natural zoom direction (pinch out = zoom in)
+        camera.position.addScaledVector(direction, delta * 2)
+        controlsRef.current.update()
+      }
+    },
+    onDoubleTap: () => {
+      if (controlsRef.current) {
+        controlsRef.current.reset()
+      }
+    }
+  })
 
   const handleZoomIn = () => {
     if (controlsRef.current) {
@@ -438,6 +460,21 @@ export function UniverseMap({ realms, theme, onRealmClick }: UniverseMapProps) {
         <div className="absolute bottom-8 right-8 glass-panel px-4 py-2 text-xs text-muted-foreground pointer-events-none hidden md:block">
           Drag to rotate • Scroll to zoom • Click planets to explore
         </div>
+
+        {onToggleTo2D && (
+          <div className="absolute top-4 right-4 z-10">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onToggleTo2D}
+              className="gap-2 glass-panel"
+              title="Switch to 2D Map"
+            >
+              <SquaresFour size={18} />
+              <span className="hidden sm:inline">2D Map</span>
+            </Button>
+          </div>
+        )}
 
         {isMobile && (
           <MobileControlsHint

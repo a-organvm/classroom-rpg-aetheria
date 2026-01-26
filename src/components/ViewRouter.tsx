@@ -5,10 +5,12 @@ import { Button } from '@/components/ui/button'
 import { Plus } from '@phosphor-icons/react'
 import { QuestCard } from '@/components/QuestCard'
 import { ArchivesView } from '@/components/ArchivesView'
+import { CalendarView } from '@/components/CalendarView'
 import { CharacterSheet } from '@/components/CharacterSheet'
 import { Leaderboard } from '@/components/Leaderboard'
 import { QuickStats } from '@/components/QuickStats'
 import { UniverseMap } from '@/components/UniverseMap'
+import { RealmMap } from '@/components/RealmMap'
 import { BoardGameMap } from '@/components/BoardGameMap'
 import { ConstellationView } from '@/components/ConstellationView'
 import { TeacherDashboard } from '@/components/TeacherDashboard'
@@ -70,6 +72,9 @@ interface ViewRouterProps {
   pendingVotes?: ThreeWayVote[]
   voteHistory?: ThreeWayVote[]
   onCastParentVote?: (voteId: string, optionId: string) => void
+  // Map mode toggle
+  mapMode?: '3d' | '2d'
+  onToggleMapMode?: () => void
 }
 
 const DefaultErrorFallback = ({ resetErrorBoundary }: { resetErrorBoundary: () => void }) => (
@@ -112,7 +117,9 @@ export const ViewRouter = memo(function ViewRouter({
   linkedStudent,
   pendingVotes,
   voteHistory,
-  onCastParentVote
+  onCastParentVote,
+  mapMode = '3d',
+  onToggleMapMode
 }: ViewRouterProps) {
   return (
     <AnimatePresence mode="wait">
@@ -125,19 +132,29 @@ export const ViewRouter = memo(function ViewRouter({
           transition={{ duration: 0.3 }}
           className="h-full relative"
         >
-          <ErrorBoundary
-            FallbackComponent={Error3DFallback}
-            onReset={() => {
-              setCurrentView('quests')
-              setTimeout(() => setCurrentView('world-map'), 100)
-            }}
-          >
-            <UniverseMap
+          {mapMode === '3d' ? (
+            <ErrorBoundary
+              FallbackComponent={Error3DFallback}
+              onReset={() => {
+                setCurrentView('quests')
+                setTimeout(() => setCurrentView('world-map'), 100)
+              }}
+            >
+              <UniverseMap
+                realms={realms}
+                theme={theme}
+                onRealmClick={onRealmClick}
+                onToggleTo2D={onToggleMapMode}
+              />
+            </ErrorBoundary>
+          ) : (
+            <RealmMap
               realms={realms}
               theme={theme}
               onRealmClick={onRealmClick}
+              onToggleTo3D={onToggleMapMode}
             />
-          </ErrorBoundary>
+          )}
           <div className="absolute top-8 left-1/2 -translate-x-1/2 text-center space-y-2">
             <h1 className="text-5xl font-bold glow-text">Aetheria</h1>
             <p className="text-lg text-muted-foreground">The Living Classroom</p>
@@ -267,6 +284,23 @@ export const ViewRouter = memo(function ViewRouter({
         </motion.div>
       )}
 
+      {currentView === 'calendar' && (
+        <motion.div
+          key="calendar"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="p-4 md:p-8"
+        >
+          <CalendarView
+            quests={quests}
+            theme={theme}
+            onQuestClick={onQuestClick}
+          />
+        </motion.div>
+      )}
+
       {currentView === 'character' && (
         <motion.div
           key="character"
@@ -297,6 +331,9 @@ export const ViewRouter = memo(function ViewRouter({
             profiles={allProfiles}
             theme={theme}
             currentUserId={profile.id}
+            role={role}
+            quests={quests}
+            submissions={submissions}
           />
         </motion.div>
       )}

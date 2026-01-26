@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,14 +9,18 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { Quest, QuestType, Theme, Realm } from '@/lib/types'
-import { Plus, Sparkle, FloppyDisk, CaretDown, Target, MagnifyingGlass, X } from '@phosphor-icons/react'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Quest, QuestType, Theme, Realm, ThematicInterest } from '@/lib/types'
+import { Plus, Sparkle, FloppyDisk, CaretDown, Target, MagnifyingGlass, X, Palette } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { generateId } from '@/lib/game-utils'
 import { sanitizePlainText } from '@/lib/sanitize'
 import { sanitizeLLMInput } from '@/lib/utils'
 import { useStandards } from '@/hooks/use-standards'
+import { useThematicVariants } from '@/hooks/use-thematic-variants'
 import { ALL_STANDARDS } from '@/lib/standards'
+import { ThematicVariantEditor } from '@/components/thematic/ThematicVariantEditor'
+import { VariantPreview } from '@/components/thematic/VariantPreview'
 import {
   MIN_QUEST_XP,
   MAX_QUEST_XP,
@@ -45,8 +49,30 @@ export function QuestCreator({ open, theme, realmId, realm, onClose, onCreate }:
   const [selectedStandardIds, setSelectedStandardIds] = useState<string[]>([])
   const [standardsOpen, setStandardsOpen] = useState(false)
   const [standardsSearch, setStandardsSearch] = useState('')
+  const [activeTab, setActiveTab] = useState<'details' | 'variants'>('details')
+  const [createdQuestId, setCreatedQuestId] = useState<string | null>(null)
 
   const { addAlignment } = useStandards()
+  const {
+    addVariant,
+    updateVariant,
+    deleteVariant,
+    getVariantsForQuest
+  } = useThematicVariants()
+
+  // Get variants for the created quest
+  const questVariants = createdQuestId ? getVariantsForQuest(createdQuestId) : []
+
+  // Check if basic quest info is filled out (enough to show variants tab)
+  const hasBasicQuestInfo = name.trim().length >= NAME_MIN_LENGTH && description.trim().length >= DESCRIPTION_MIN_LENGTH
+
+  // Reset state when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setActiveTab('details')
+      setCreatedQuestId(null)
+    }
+  }, [open])
 
   // Filter standards by search
   const filteredStandards = ALL_STANDARDS.filter(standard => {
@@ -160,36 +186,112 @@ Return only the description text, no quotes or extra formatting.`
     })
 
     onCreate(newQuest)
+
+    // Store the created quest ID for variant editing
+    setCreatedQuestId(questId)
+
+    // Switch to variants tab to allow adding thematic variants
+    setActiveTab('variants')
+
+    toast.success('Quest created! You can now add thematic variants.')
+  }
+
+  // Handle closing after variants are done
+  const handleFinish = () => {
     setName('')
     setDescription('')
     setQuestType('standard')
     setXpValue(DEFAULT_QUEST_XP)
     setSelectedStandardIds([])
     setStandardsSearch('')
-    toast.success('Quest created!')
+    setActiveTab('details')
+    setCreatedQuestId(null)
+    onClose()
+  }
+
+  // AI generation for variant content
+  const handleGenerateVariantWithAI = async (interest: ThematicInterest) => {
+    if (!name.trim()) {
+      throw new Error('Quest name required')
+    }
+
+    const sanitizedName = sanitizeLLMInput(name)
+    const sanitizedDesc = sanitizeLLMInput(description)
+    const promptText = `You are helping a teacher create a thematic variant of an assignment for students interested in ${interest}.
+
+Original Quest: "${sanitizedName}"
+Original Description: "${sanitizedDesc}"
+Theme: ${theme}
+
+Create a variant that reframes this assignment through a ${interest} lens while maintaining the same learning objectives. Return a JSON object with:
+- title: A catchy title incorporating the ${interest} theme
+- description: A brief 1-2 sentence description
+- content: The full reframed assignment text (3-4 paragraphs)
+
+Return ONLY valid JSON, no markdown.`
+
+    const response = await window.spark.llm(promptText, 'gpt-4o-mini')
+
+    try {
+      const parsed = JSON.parse(response.trim())
+      return {
+        title: parsed.title || `${name} (${interest})`,
+        description: parsed.description || '',
+        content: parsed.content || ''
+      }
+    } catch {
+      // If JSON parsing fails, use the raw response as content
+      return {
+        title: `${name} (${interest})`,
+        description: '',
+        content: response.trim()
+      }
+    }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="glass-panel max-w-2xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={createdQuestId ? handleFinish : onClose}>
+      <DialogContent className="glass-panel max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl flex items-center gap-2">
             <Plus size={28} weight="bold" />
-            Create New Quest
+            {createdQuestId ? 'Add Thematic Variants' : 'Create New Quest'}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 mt-4">
-          <div className="space-y-2">
-            <Label htmlFor="quest-name">Quest Name</Label>
-            <Input
-              id="quest-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., The Pythagorean Challenge"
-              className="glass-panel"
-            />
-          </div>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'details' | 'variants')}>
+          <TabsList className="w-full">
+            <TabsTrigger value="details" className="flex-1 gap-2">
+              <Plus size={16} />
+              Quest Details
+            </TabsTrigger>
+            <TabsTrigger
+              value="variants"
+              className="flex-1 gap-2"
+              disabled={!createdQuestId && !hasBasicQuestInfo}
+            >
+              <Palette size={16} />
+              Thematic Variants
+              {questVariants.length > 0 && (
+                <Badge variant="secondary" className="ml-1">
+                  {questVariants.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="details" className="space-y-6 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="quest-name">Quest Name</Label>
+              <Input
+                id="quest-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g., The Pythagorean Challenge"
+                className="glass-panel"
+                disabled={!!createdQuestId}
+              />
+            </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -351,24 +453,99 @@ Return only the description text, no quotes or extra formatting.`
             </CollapsibleContent>
           </Collapsible>
 
-          {questType === 'boss' && (
-            <div className="glass-panel p-4 bg-destructive/10 border-2 border-destructive">
-              <p className="text-sm text-destructive-foreground">
-                <strong>Boss Battle:</strong> This quest is marked as extra challenging. Students will know this is a difficult assignment.
-              </p>
-            </div>
-          )}
+            {questType === 'boss' && (
+              <div className="glass-panel p-4 bg-destructive/10 border-2 border-destructive">
+                <p className="text-sm text-destructive-foreground">
+                  <strong>Boss Battle:</strong> This quest is marked as extra challenging. Students will know this is a difficult assignment.
+                </p>
+              </div>
+            )}
 
-          <div className="flex gap-3">
-            <Button onClick={handleCreate} className="flex-1 gap-2" size="lg">
-              <FloppyDisk size={20} weight="fill" />
-              Create Quest
-            </Button>
-            <Button onClick={onClose} variant="outline" size="lg">
-              Cancel
-            </Button>
-          </div>
-        </div>
+            {/* Show create button only if quest hasn't been created yet */}
+            {!createdQuestId && (
+              <div className="flex gap-3">
+                <Button onClick={handleCreate} className="flex-1 gap-2" size="lg">
+                  <FloppyDisk size={20} weight="fill" />
+                  Create Quest
+                </Button>
+                <Button onClick={onClose} variant="outline" size="lg">
+                  Cancel
+                </Button>
+              </div>
+            )}
+
+            {/* Show finish button if quest is created */}
+            {createdQuestId && (
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => setActiveTab('variants')}
+                  variant="outline"
+                  className="flex-1 gap-2"
+                  size="lg"
+                >
+                  <Palette size={20} />
+                  Add Variants
+                </Button>
+                <Button onClick={handleFinish} className="flex-1 gap-2" size="lg">
+                  <FloppyDisk size={20} weight="fill" />
+                  Finish
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Thematic Variants Tab */}
+          <TabsContent value="variants" className="space-y-6 mt-4">
+            {createdQuestId ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Variant Editor */}
+                <div className="space-y-4">
+                  <ThematicVariantEditor
+                    questId={createdQuestId}
+                    questName={name}
+                    variants={questVariants}
+                    onAddVariant={(variant) => addVariant(createdQuestId, variant)}
+                    onUpdateVariant={(variantId, updates) => updateVariant(createdQuestId, variantId, updates)}
+                    onDeleteVariant={(variantId) => deleteVariant(createdQuestId, variantId)}
+                    onGenerateWithAI={handleGenerateVariantWithAI}
+                  />
+                </div>
+
+                {/* Variant Preview */}
+                <div className="space-y-4">
+                  <VariantPreview
+                    questName={name}
+                    variants={questVariants}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="glass-panel p-8 text-center text-muted-foreground">
+                <Palette size={48} className="mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-medium">Create the quest first</p>
+                <p className="text-sm mt-1">
+                  Fill out the quest details and click "Create Quest" to enable thematic variants.
+                </p>
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => setActiveTab('details')}
+                >
+                  Go to Quest Details
+                </Button>
+              </div>
+            )}
+
+            {createdQuestId && (
+              <div className="flex gap-3 pt-4 border-t">
+                <Button onClick={handleFinish} className="flex-1 gap-2" size="lg">
+                  <FloppyDisk size={20} weight="fill" />
+                  Finish & Close
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   )

@@ -9,8 +9,10 @@ import { motion } from 'framer-motion'
 import { AvatarDisplay } from '@/components/AvatarDisplay'
 import { DEFAULT_AVATAR } from '@/lib/avatar-options'
 import { SoundSettings } from '@/components/SoundSettings'
+import { NotificationCenter } from '@/components/NotificationCenter'
 import { useNavigationItems } from '@/hooks/use-navigation-items'
 import { usePlayerStats } from '@/hooks/use-player-stats'
+import { useMotionConfig } from '@/hooks/use-reduced-motion'
 
 interface HUDSidebarProps {
   profile: UserProfile
@@ -34,6 +36,7 @@ export function HUDSidebar({
   const themeConfig = THEME_CONFIGS[theme]
   const navItems = useNavigationItems(theme, role)
   const { level, levelTitle, xpProgress, xpInCurrentLevel, xpNeededForLevel, xpToNextLevel } = usePlayerStats(profile, role)
+  const { shouldAnimate, animationProps } = useMotionConfig()
 
   const RoleIcon = theme === 'fantasy' ? Sword :
                    theme === 'scifi' ? Brain :
@@ -42,20 +45,20 @@ export function HUDSidebar({
 
   return (
     <div className="hidden md:flex w-80 h-screen glass-panel rounded-none border-r-2 border-l-0 border-t-0 border-b-0 flex-col p-6 space-y-6 overflow-y-auto">
-      <motion.div 
+      <motion.div
         className="space-y-4"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        initial={shouldAnimate ? { opacity: 0, y: -20 } : false}
+        animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
+        transition={shouldAnimate ? { duration: 0.5 } : { duration: 0 }}
       >
         <div className="flex items-center gap-4">
           <motion.div
-            whileHover={{ scale: 1.05, rotate: [0, -5, 5, 0] }}
-            transition={{ duration: 0.3 }}
+            whileHover={shouldAnimate ? { scale: 1.05, rotate: [0, -5, 5, 0] } : undefined}
+            transition={shouldAnimate ? { duration: 0.3 } : { duration: 0 }}
           >
             <div className="w-16 h-16 border-2 border-primary shadow-lg rounded-full overflow-hidden bg-card">
-              <AvatarDisplay 
-                avatar={profile.avatar || DEFAULT_AVATAR} 
+              <AvatarDisplay
+                avatar={profile.avatar || DEFAULT_AVATAR}
                 size="md"
               />
             </div>
@@ -79,17 +82,19 @@ export function HUDSidebar({
           </div>
           <div className="relative">
             <Progress value={xpProgress} className="h-3" />
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full"
-              animate={{
-                x: ['-100%', '200%']
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: 'linear'
-              }}
-            />
+            {shouldAnimate && (
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full"
+                animate={{
+                  x: ['-100%', '200%']
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: 'linear'
+                }}
+              />
+            )}
           </div>
           <div className="text-xs text-muted-foreground text-right">
             {xpToNextLevel} {themeConfig.xpLabel} to level {level + 1}
@@ -97,11 +102,11 @@ export function HUDSidebar({
         </div>
 
         {profile.artifacts.length > 0 && (
-          <motion.div 
+          <motion.div
             className="text-xs text-muted-foreground flex items-center gap-2"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
+            initial={shouldAnimate ? { opacity: 0 } : false}
+            animate={shouldAnimate ? { opacity: 1 } : false}
+            transition={shouldAnimate ? { delay: 0.3 } : { duration: 0 }}
           >
             <Trophy size={14} className="text-accent" />
             <span>{profile.artifacts.length} artifact{profile.artifacts.length !== 1 ? 's' : ''} collected</span>
@@ -118,10 +123,10 @@ export function HUDSidebar({
           return (
             <motion.div
               key={item.id}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              initial={item.teacherOnly ? { opacity: 0, x: -20 } : undefined}
-              animate={item.teacherOnly ? { opacity: 1, x: 0 } : undefined}
+              whileHover={shouldAnimate ? { scale: 1.02 } : undefined}
+              whileTap={shouldAnimate ? { scale: 0.98 } : undefined}
+              initial={item.teacherOnly && shouldAnimate ? { opacity: 0, x: -20 } : undefined}
+              animate={item.teacherOnly && shouldAnimate ? { opacity: 1, x: 0 } : undefined}
             >
               <Button
                 variant={isActive ? 'default' : 'ghost'}
@@ -140,7 +145,7 @@ export function HUDSidebar({
 
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
+          <motion.div whileHover={shouldAnimate ? { scale: 1.02 } : undefined} whileTap={shouldAnimate ? { scale: 0.98 } : undefined} className="flex-1">
             <Button
               variant="outline"
               className="w-full justify-start gap-3"
@@ -156,12 +161,15 @@ export function HUDSidebar({
               <ArrowsClockwise size={16} className="ml-auto" />
             </Button>
           </motion.div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <motion.div whileHover={shouldAnimate ? { scale: 1.05 } : undefined} whileTap={shouldAnimate ? { scale: 0.95 } : undefined}>
+            <NotificationCenter />
+          </motion.div>
+          <motion.div whileHover={shouldAnimate ? { scale: 1.05 } : undefined} whileTap={shouldAnimate ? { scale: 0.95 } : undefined}>
             <SoundSettings />
           </motion.div>
         </div>
 
-        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+        <motion.div whileHover={shouldAnimate ? { scale: 1.02 } : undefined} whileTap={shouldAnimate ? { scale: 0.98 } : undefined}>
           <Button
             variant="outline"
             className="w-full justify-start gap-3"

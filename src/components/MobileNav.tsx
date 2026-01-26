@@ -20,6 +20,7 @@ import { motion } from 'framer-motion'
 import { AvatarDisplay } from '@/components/AvatarDisplay'
 import { DEFAULT_AVATAR } from '@/lib/avatar-options'
 import { SoundSettings } from '@/components/SoundSettings'
+import { NotificationCenter } from '@/components/NotificationCenter'
 import { useNavigationItems } from '@/hooks/use-navigation-items'
 import { usePlayerStats } from '@/hooks/use-player-stats'
 
@@ -173,7 +174,8 @@ export function MobileNav({
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <NotificationCenter />
               <Badge variant="outline" className="text-xs">
                 {profile.artifacts.length}
                 <Trophy size={12} className="ml-1" />

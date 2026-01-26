@@ -8,7 +8,8 @@ import {
   ChalkboardTeacher,
   ChartBar,
   Handshake,
-  GraduationCap
+  GraduationCap,
+  CalendarBlank
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import { Theme, Role, THEME_CONFIGS } from '@/lib/types'
@@ -40,6 +41,7 @@ export function useNavigationItems(theme: Theme, role: Role): NavigationItem[] {
     const items: NavigationItem[] = [
       { id: 'world-map', label: 'World Map', icon: House },
       { id: 'quests', label: `${themeConfig.questLabel}s`, icon: Target },
+      { id: 'calendar', label: 'Calendar', icon: CalendarBlank },
       { id: 'archives', label: themeConfig.archiveLabel, icon: BookOpen },
       { id: 'character', label: 'My Hero', icon: User },
       { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },

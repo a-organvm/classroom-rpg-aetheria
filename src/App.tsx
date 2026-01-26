@@ -8,7 +8,9 @@ import { useDialogs } from '@/hooks/use-dialogs'
 import { useQuestEvaluation } from '@/hooks/use-quest-evaluation'
 import { useThematicVariants } from '@/hooks/use-thematic-variants'
 import { useVoting } from '@/hooks/use-voting'
+import { useAIConsent, type AIFeature } from '@/hooks/use-ai-consent'
 import { SandboxBanner } from '@/components/SandboxBanner'
+import { AIConsentModal } from '@/components/AIConsentModal'
 import { HUDSidebar } from '@/components/HUDSidebar'
 import { MobileNav } from '@/components/MobileNav'
 import { RealmEditor } from '@/components/RealmEditor'
@@ -77,6 +79,15 @@ function AppContent() {
   // Voting system for parent portal
   const { votes, castVote, getPendingVotes, getVotesByStudent } = useVoting()
 
+  // AI consent management
+  const { hasConsented, checkFeatureConsent } = useAIConsent()
+  const [showAIConsentModal, setShowAIConsentModal] = useState(false)
+  const [pendingQuestSubmission, setPendingQuestSubmission] = useState<{
+    questId: string
+    content: string
+  } | null>(null)
+  const [requestedAIFeatures, setRequestedAIFeatures] = useState<AIFeature[]>([])
+
   // Get current user's preferences
   const currentPreferences = useMemo(() => {
     if (profile?.id) {
@@ -127,6 +138,11 @@ function AppContent() {
 
   const [currentView, setCurrentView] = useState('world-map')
   const [selectedRealmId, setSelectedRealmId] = useState<string | null>(null)
+  const [mapMode, setMapMode] = useState<'3d' | '2d'>('3d')
+
+  const handleToggleMapMode = useCallback(() => {
+    setMapMode(prev => prev === '3d' ? '2d' : '3d')
+  }, [])
   const mainRef = useRef<HTMLDivElement>(null)
   const isMobile = useIsMobile()
 
@@ -175,9 +191,46 @@ function AppContent() {
   const handleQuestSubmit = useCallback(async (questId: string, content: string) => {
     const quest = quests.find(q => q.id === questId)
     if (!quest) return
+
+    // Check if user has consented to required AI features
+    const requiredFeatures: AIFeature[] = ['quest-evaluation', 'knowledge-crystals', 'redemption-quests']
+    const missingConsent = requiredFeatures.filter(f => !checkFeatureConsent(f))
+
+    if (missingConsent.length > 0) {
+      // Store the pending submission and show consent modal
+      setPendingQuestSubmission({ questId, content })
+      setRequestedAIFeatures(requiredFeatures)
+      setShowAIConsentModal(true)
+      return
+    }
+
     await evaluateQuest(quest, content)
     deselectQuest()
-  }, [quests, evaluateQuest, deselectQuest])
+  }, [quests, evaluateQuest, deselectQuest, checkFeatureConsent])
+
+  // Handle consent acceptance - process pending submission
+  const handleAIConsentAccept = useCallback(async () => {
+    setShowAIConsentModal(false)
+
+    // If there's a pending quest submission, process it now
+    if (pendingQuestSubmission) {
+      const quest = quests.find(q => q.id === pendingQuestSubmission.questId)
+      if (quest) {
+        await evaluateQuest(quest, pendingQuestSubmission.content)
+        deselectQuest()
+      }
+      setPendingQuestSubmission(null)
+    }
+
+    setRequestedAIFeatures([])
+  }, [pendingQuestSubmission, quests, evaluateQuest, deselectQuest])
+
+  // Handle consent decline
+  const handleAIConsentDecline = useCallback(() => {
+    setShowAIConsentModal(false)
+    setPendingQuestSubmission(null)
+    setRequestedAIFeatures([])
+  }, [])
 
   const handleCreateRealm = useCallback((realm: Realm) => {
     addRealm(realm)
@@ -329,6 +382,8 @@ function AppContent() {
           pendingVotes={pendingVotesForParent}
           voteHistory={voteHistoryForParent}
           onCastParentVote={handleCastParentVote}
+          mapMode={mapMode}
+          onToggleMapMode={handleToggleMapMode}
         />
       </main>
 
@@ -376,6 +431,14 @@ function AppContent() {
         role={dialogState.levelUpData.role}
         theme={theme}
         onComplete={hideLevelUpCelebration}
+      />
+
+      <AIConsentModal
+        open={showAIConsentModal}
+        theme={theme}
+        requestedFeatures={requestedAIFeatures.length > 0 ? requestedAIFeatures : undefined}
+        onAccept={handleAIConsentAccept}
+        onDecline={handleAIConsentDecline}
       />
     </div>
   )

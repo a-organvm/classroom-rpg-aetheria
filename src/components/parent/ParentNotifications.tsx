@@ -23,6 +23,7 @@ import {
 } from '@phosphor-icons/react'
 import { formatDistanceToNow } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { useMotionConfig } from '@/hooks/use-reduced-motion'
 
 interface ParentNotificationsProps {
   notifications: Notification[]
@@ -56,6 +57,7 @@ export function ParentNotifications({
   onDismiss
 }: ParentNotificationsProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const { shouldAnimate } = useMotionConfig()
 
   const unreadCount = notifications.filter(n => !n.read).length
 
@@ -65,13 +67,19 @@ export function ParentNotifications({
         <Button variant="ghost" size="icon" className="relative">
           <Bell size={20} />
           {unreadCount > 0 && (
-            <motion.span
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="absolute -top-1 -right-1 w-5 h-5 bg-destructive rounded-full text-[10px] flex items-center justify-center text-destructive-foreground font-medium"
-            >
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </motion.span>
+            shouldAnimate ? (
+              <motion.span
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute -top-1 -right-1 w-5 h-5 bg-destructive rounded-full text-[10px] flex items-center justify-center text-destructive-foreground font-medium"
+              >
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </motion.span>
+            ) : (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive rounded-full text-[10px] flex items-center justify-center text-destructive-foreground font-medium">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )
           )}
         </Button>
       </PopoverTrigger>
@@ -110,12 +118,13 @@ export function ParentNotifications({
                     return (
                       <motion.div
                         key={notification.id}
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ delay: index * 0.03 }}
+                        initial={shouldAnimate ? { opacity: 0, y: -10 } : false}
+                        animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
+                        exit={shouldAnimate ? { opacity: 0, x: -20 } : { opacity: 0 }}
+                        transition={shouldAnimate ? { delay: index * 0.03 } : { duration: 0 }}
                         className={cn(
-                          'p-3 border-b last:border-b-0 hover:bg-muted/50 transition-colors',
+                          'p-3 border-b last:border-b-0 hover:bg-muted/50',
+                          shouldAnimate && 'transition-colors',
                           !notification.read && 'bg-primary/5'
                         )}
                       >

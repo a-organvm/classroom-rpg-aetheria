@@ -8,6 +8,7 @@ import { useState, useMemo } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
@@ -27,11 +28,16 @@ import {
   Student,
   Buildings,
   Play,
-  ArrowLeft
+  ArrowLeft,
+  Gear,
+  CheckCircle,
+  XCircle
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { TranscriptReport } from './TranscriptReport'
 import { MasteryReport } from './MasteryReport'
+import { ReportConfigDialog } from './ReportConfigDialog'
+import { useReportConfig, type ReportConfig as HookReportConfig } from '@/hooks/use-report-config'
 import type { Quest, Submission, Realm, Theme, ReportConfig, GradeLevel } from '@/lib/types'
 import { THEME_CONFIGS } from '@/lib/types'
 
@@ -54,6 +60,9 @@ export function ReportGenerationPanel({
 }: ReportGenerationPanelProps) {
   const themeConfig = THEME_CONFIGS[theme]
 
+  // Hook for persisted config
+  const { config: savedConfig } = useReportConfig()
+
   // Config state
   const [reportType, setReportType] = useState<ReportType>('transcript')
   const [selectedRealmId, setSelectedRealmId] = useState<string>('all')
@@ -63,6 +72,9 @@ export function ReportGenerationPanel({
 
   // Report view state
   const [showReport, setShowReport] = useState(false)
+
+  // Config dialog state
+  const [showConfigDialog, setShowConfigDialog] = useState(false)
 
   // Get unique students from submissions
   const students = useMemo(() => {
@@ -115,6 +127,34 @@ export function ReportGenerationPanel({
     setShowReport(false)
   }
 
+  const handleConfigGenerate = (config: HookReportConfig) => {
+    // Apply configuration from dialog
+    if (config.reportType === 'transcript' || config.reportType === 'mastery') {
+      setReportType(config.reportType)
+    }
+
+    if (config.dateRange.start) {
+      setDateRange(prev => ({ ...prev, from: config.dateRange.start || undefined }))
+    }
+    if (config.dateRange.end) {
+      setDateRange(prev => ({ ...prev, to: config.dateRange.end || undefined }))
+    }
+
+    setIncludeComments(config.includeComments)
+
+    // If specific students selected, use the first one (panel supports single student)
+    if (config.studentIds !== 'all' && config.studentIds.length > 0) {
+      setSelectedStudentId(config.studentIds[0])
+    }
+
+    // Show the report
+    if (selectedStudentId || (config.studentIds !== 'all' && config.studentIds.length > 0)) {
+      setShowReport(true)
+    } else {
+      toast.error('Please select a student')
+    }
+  }
+
   // Show report view
   if (showReport) {
     const student = students.find(s => s.id === selectedStudentId)
@@ -157,12 +197,74 @@ export function ReportGenerationPanel({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Generate Reports</h2>
-        <p className="text-muted-foreground">
-          Create student transcripts and mastery reports
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Generate Reports</h2>
+          <p className="text-muted-foreground">
+            Create student transcripts and mastery reports
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => setShowConfigDialog(true)}
+          className="gap-2"
+        >
+          <Gear size={18} />
+          Configure
+        </Button>
       </div>
+
+      {/* Current Configuration Summary */}
+      {savedConfig.templatePreset && (
+        <Card className="glass-panel p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Badge variant="secondary" className="capitalize">
+                {savedConfig.templatePreset.replace('-', ' ')}
+              </Badge>
+              <span className="text-sm text-muted-foreground">
+                {savedConfig.reportType} report
+                {savedConfig.format !== 'pdf' && ` (${savedConfig.format.toUpperCase()})`}
+              </span>
+            </div>
+            <div className="flex items-center gap-4 text-sm">
+              <span className="flex items-center gap-1">
+                {savedConfig.includeGrades ? (
+                  <CheckCircle size={16} className="text-green-500" />
+                ) : (
+                  <XCircle size={16} className="text-muted-foreground" />
+                )}
+                Grades
+              </span>
+              <span className="flex items-center gap-1">
+                {savedConfig.includeComments ? (
+                  <CheckCircle size={16} className="text-green-500" />
+                ) : (
+                  <XCircle size={16} className="text-muted-foreground" />
+                )}
+                Comments
+              </span>
+              <span className="flex items-center gap-1">
+                {savedConfig.includeStandards ? (
+                  <CheckCircle size={16} className="text-green-500" />
+                ) : (
+                  <XCircle size={16} className="text-muted-foreground" />
+                )}
+                Standards
+              </span>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Report Config Dialog */}
+      <ReportConfigDialog
+        open={showConfigDialog}
+        onClose={() => setShowConfigDialog(false)}
+        onGenerate={handleConfigGenerate}
+        submissions={submissions}
+        theme={theme}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Configuration Panel */}

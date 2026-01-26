@@ -11,8 +11,25 @@
  * - Clear indicators that user is in sandbox mode
  */
 
-import type { Realm, Quest, UserProfile, Submission, KnowledgeCrystal } from './types'
+import type {
+  Realm,
+  Quest,
+  UserProfile,
+  Submission,
+  KnowledgeCrystal,
+  ThreeWayVote,
+  StudentPreferences,
+  ThematicVariant,
+  QuestStandardAlignment,
+  StandardMastery,
+  ParentAccount
+} from './types'
+import type { LinkRequest } from '@/hooks/use-parent-linking'
 import { DEFAULT_AVATAR } from './avatar-options'
+import { getDemoVotes } from './demo-votes'
+import { getDemoPreferences } from './demo-preferences'
+import { getDemoVariants, type QuestVariants } from './demo-variants'
+import { getDemoAlignments, getDemoMastery } from './demo-standards-data'
 
 export const SANDBOX_MODE_KEY = 'aetheria-sandbox-mode'
 export const SANDBOX_DATA_VERSION = '1.0.0'
@@ -281,6 +298,146 @@ export function getDemoCrystals(): KnowledgeCrystal[] {
 }
 
 /**
+ * Get demo parent accounts for sandbox mode
+ */
+export function getDemoParentAccounts(): ParentAccount[] {
+  return [
+    {
+      id: 'parent-01',
+      name: 'Sarah Johnson',
+      email: 'sarah.johnson@example.com',
+      linkedStudentIds: ['demo-user-1'],
+      notificationPreferences: {
+        email: true,
+        inApp: true,
+        voteReminders: true
+      },
+      createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000 // 30 days ago
+    },
+    {
+      id: 'parent-02',
+      name: 'Michael Chen',
+      email: 'michael.chen@example.com',
+      linkedStudentIds: [],
+      notificationPreferences: {
+        email: true,
+        inApp: true,
+        voteReminders: false
+      },
+      createdAt: Date.now() - 14 * 24 * 60 * 60 * 1000 // 14 days ago
+    },
+    {
+      id: 'parent-03',
+      name: 'Emily Rodriguez',
+      email: 'emily.rodriguez@example.com',
+      linkedStudentIds: ['student-emma-01'],
+      notificationPreferences: {
+        email: false,
+        inApp: true,
+        voteReminders: true
+      },
+      createdAt: Date.now() - 45 * 24 * 60 * 60 * 1000 // 45 days ago
+    }
+  ]
+}
+
+/**
+ * Get demo parent-student link requests for sandbox mode
+ */
+export function getDemoLinkRequests(): LinkRequest[] {
+  return [
+    // Approved link: parent-01 linked to demo-user-1
+    {
+      id: 'link-req-01',
+      parentId: 'parent-01',
+      studentId: 'demo-user-1',
+      status: 'approved',
+      requestedAt: Date.now() - 29 * 24 * 60 * 60 * 1000,
+      respondedAt: Date.now() - 28 * 24 * 60 * 60 * 1000
+    },
+    // Pending link: parent-02 wants to link to demo-user-1
+    {
+      id: 'link-req-02',
+      parentId: 'parent-02',
+      studentId: 'demo-user-1',
+      status: 'pending',
+      requestedAt: Date.now() - 2 * 24 * 60 * 60 * 1000
+    },
+    // Approved link: parent-03 linked to student-emma-01
+    {
+      id: 'link-req-03',
+      parentId: 'parent-03',
+      studentId: 'student-emma-01',
+      status: 'approved',
+      requestedAt: Date.now() - 40 * 24 * 60 * 60 * 1000,
+      respondedAt: Date.now() - 39 * 24 * 60 * 60 * 1000
+    },
+    // Rejected link example
+    {
+      id: 'link-req-04',
+      parentId: 'parent-02',
+      studentId: 'student-emma-01',
+      status: 'rejected',
+      requestedAt: Date.now() - 10 * 24 * 60 * 60 * 1000,
+      respondedAt: Date.now() - 9 * 24 * 60 * 60 * 1000
+    }
+  ]
+}
+
+/**
+ * Get demo student profiles for parent linking
+ */
+export function getDemoStudentProfiles(): UserProfile[] {
+  return [
+    {
+      id: 'demo-user-1',
+      name: 'Explorer',
+      role: 'student',
+      xp: 125,
+      level: 2,
+      artifacts: [
+        {
+          id: 'artifact-demo-1',
+          name: 'Beginner\'s Compass',
+          description: 'A mystical compass that guides new adventurers.',
+          rarity: 'common',
+          questId: 'quest-demo-1',
+          earnedAt: Date.now() - 24 * 60 * 60 * 1000
+        }
+      ],
+      avatar: DEFAULT_AVATAR
+    },
+    {
+      id: 'student-emma-01',
+      name: 'Emma Rodriguez',
+      role: 'student',
+      xp: 450,
+      level: 5,
+      artifacts: [
+        {
+          id: 'artifact-emma-1',
+          name: 'Scholar\'s Quill',
+          description: 'A magical quill that enhances writing abilities.',
+          rarity: 'rare',
+          questId: 'quest-demo-3',
+          earnedAt: Date.now() - 14 * 24 * 60 * 60 * 1000
+        }
+      ],
+      avatar: DEFAULT_AVATAR
+    },
+    {
+      id: 'student-alex-01',
+      name: 'Alex Thompson',
+      role: 'student',
+      xp: 275,
+      level: 3,
+      artifacts: [],
+      avatar: DEFAULT_AVATAR
+    }
+  ]
+}
+
+/**
  * Initialize sandbox data if needed
  */
 export function initializeSandboxData(): {
@@ -289,19 +446,55 @@ export function initializeSandboxData(): {
   profile: UserProfile
   submissions: Submission[]
   crystals: KnowledgeCrystal[]
+  votes: ThreeWayVote[]
+  studentPrefs: StudentPreferences[]
+  variants: QuestVariants[]
+  alignments: QuestStandardAlignment[]
+  mastery: StandardMastery[]
+  parentAccounts: ParentAccount[]
+  linkRequests: LinkRequest[]
+  studentProfiles: UserProfile[]
 } {
   if (!isSandboxMode()) {
     throw new Error('Cannot initialize sandbox data when not in sandbox mode')
   }
-  
+
   return {
     realms: getDemoRealms(),
     quests: getDemoQuests(),
     profile: getDemoProfile(),
     submissions: getDemoSubmissions(),
-    crystals: getDemoCrystals()
+    crystals: getDemoCrystals(),
+    votes: getDemoVotes(),
+    studentPrefs: getDemoPreferences(),
+    variants: getDemoVariants(),
+    alignments: getDemoAlignments(),
+    mastery: getDemoMastery(),
+    parentAccounts: getDemoParentAccounts(),
+    linkRequests: getDemoLinkRequests(),
+    studentProfiles: getDemoStudentProfiles()
   }
 }
+
+// ============================================
+// Sandbox Storage Keys
+// ============================================
+
+export const SANDBOX_STORAGE_KEYS = {
+  realms: 'aetheria-realms',
+  quests: 'aetheria-quests',
+  profile: 'aetheria-profile',
+  submissions: 'aetheria-submissions',
+  crystals: 'aetheria-crystals',
+  votes: 'aetheria-votes',
+  studentPrefs: 'aetheria-student-prefs',
+  variants: 'aetheria-variants',
+  alignments: 'aetheria-alignments',
+  mastery: 'aetheria-mastery',
+  parentAccounts: 'aetheria-parent-accounts',
+  linkRequests: 'aetheria-parent-link-requests',
+  studentProfiles: 'aetheria-student-profiles'
+} as const
 
 /**
  * Get sandbox banner message
@@ -317,14 +510,23 @@ export function needsSandboxInitialization(): boolean {
   if (!isSandboxMode()) {
     return false
   }
-  
+
   if (typeof localStorage === 'undefined') {
     return false
   }
-  
+
   // Check if sandbox data exists
   const hasRealms = localStorage.getItem(getSandboxKey('aetheria-realms'))
   const hasQuests = localStorage.getItem(getSandboxKey('aetheria-quests'))
-  
+
   return !hasRealms || !hasQuests
 }
+
+// ============================================
+// Re-export Demo Data Functions
+// ============================================
+
+export { getDemoVotes } from './demo-votes'
+export { getDemoPreferences } from './demo-preferences'
+export { getDemoVariants, type QuestVariants } from './demo-variants'
+export { getDemoAlignments, getDemoMastery } from './demo-standards-data'

@@ -1,11 +1,14 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { Realm, Theme } from '@/lib/types'
 import { motion } from 'framer-motion'
+import { Button } from '@/components/ui/button'
+import { Cube } from '@phosphor-icons/react'
 
 interface RealmMapProps {
   realms: Realm[]
   theme: Theme
   onRealmClick: (realmId: string) => void
+  onToggleTo3D?: () => void
 }
 
 interface Position2D {
@@ -20,7 +23,7 @@ const THEME_DECORATIONS = {
   modern: ['🏢', '🎓', '📚', '💼', '🏫']
 }
 
-export function RealmMap({ realms, theme, onRealmClick }: RealmMapProps) {
+export function RealmMap({ realms, theme, onRealmClick, onToggleTo3D }: RealmMapProps) {
   const [hoveredRealm, setHoveredRealm] = useState<string | null>(null)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
@@ -256,6 +259,21 @@ export function RealmMap({ realms, theme, onRealmClick }: RealmMapProps) {
       <div className="absolute bottom-8 right-8 glass-panel px-4 py-2 text-xs text-muted-foreground pointer-events-none">
         Drag to pan • Click islands to explore
       </div>
+
+      {onToggleTo3D && (
+        <div className="absolute top-4 right-4 z-10">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onToggleTo3D}
+            className="gap-2 glass-panel"
+            title="Switch to 3D Map"
+          >
+            <Cube size={18} />
+            <span className="hidden sm:inline">3D Map</span>
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
