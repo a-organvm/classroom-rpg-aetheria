@@ -15,8 +15,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { VotingPanel } from '@/components/voting/VotingPanel'
 import { VotingHistory } from '@/components/voting/VotingHistory'
 import { ParentLinkingModal } from './ParentLinkingModal'
-import type { UserProfile, ThreeWayVote, Submission } from '@/lib/types'
-import type { LinkRequest } from '@/hooks/use-parent-linking'
+import type { UserProfile, ThreeWayVote, Submission, ParentStudentLink } from '@/lib/types'
 import {
   GraduationCap,
   ChartLine,
@@ -36,7 +35,7 @@ interface ParentPortalProps {
   pendingVotes: ThreeWayVote[]
   voteHistory: ThreeWayVote[]
   recentSubmissions: Submission[]
-  linkRequests?: LinkRequest[]
+  linkRequests?: ParentStudentLink[]
   onCastVote: (voteId: string, optionId: string) => void
   onRequestLink?: (studentId: string) => void
   onRemoveLink?: (studentId: string) => void

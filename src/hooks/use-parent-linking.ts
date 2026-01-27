@@ -7,31 +7,23 @@
 import { useCallback, useMemo } from 'react'
 import { useSandboxKV } from './use-sandbox-kv'
 import { v4 as uuid } from 'uuid'
-
-export interface LinkRequest {
-  id: string
-  parentId: string
-  studentId: string
-  status: 'pending' | 'approved' | 'rejected'
-  requestedAt: number
-  respondedAt?: number
-}
+import type { ParentStudentLink } from '@/lib/types'
 
 interface UseParentLinkingReturn {
-  linkRequests: LinkRequest[]
+  linkRequests: ParentStudentLink[]
   linkedStudents: string[]
   linkedParents: string[]
   requestLink: (studentId: string, parentId: string) => void
   approveLink: (requestId: string) => void
   rejectLink: (requestId: string) => void
   removeLink: (parentId: string, studentId: string) => void
-  getPendingRequests: (forUserId: string) => LinkRequest[]
+  getPendingRequests: (forUserId: string) => ParentStudentLink[]
   getLinkedStudentsForParent: (parentId: string) => string[]
   getLinkedParentsForStudent: (studentId: string) => string[]
 }
 
 export function useParentLinking(currentUserId?: string): UseParentLinkingReturn {
-  const [linkRequests, setLinkRequests] = useSandboxKV<LinkRequest[]>(
+  const [linkRequests, setLinkRequests] = useSandboxKV<ParentStudentLink[]>(
     'aetheria-parent-link-requests',
     []
   )
@@ -68,7 +60,7 @@ export function useParentLinking(currentUserId?: string): UseParentLinkingReturn
       return // Already exists
     }
 
-    const newRequest: LinkRequest = {
+    const newRequest: ParentStudentLink = {
       id: uuid(),
       parentId,
       studentId,
@@ -87,7 +79,7 @@ export function useParentLinking(currentUserId?: string): UseParentLinkingReturn
         return {
           ...req,
           status: 'approved' as const,
-          respondedAt: Date.now()
+          resolvedAt: Date.now()
         }
       })
     )
@@ -101,7 +93,7 @@ export function useParentLinking(currentUserId?: string): UseParentLinkingReturn
         return {
           ...req,
           status: 'rejected' as const,
-          respondedAt: Date.now()
+          resolvedAt: Date.now()
         }
       })
     )
@@ -117,7 +109,7 @@ export function useParentLinking(currentUserId?: string): UseParentLinkingReturn
   }, [currentRequests, setLinkRequests])
 
   // Get pending requests for a specific user (works for both parents and students)
-  const getPendingRequests = useCallback((forUserId: string): LinkRequest[] => {
+  const getPendingRequests = useCallback((forUserId: string): ParentStudentLink[] => {
     return currentRequests.filter(
       req =>
         req.status === 'pending' &&

@@ -23,6 +23,7 @@ import type {
   Role,
   ThemeConfig,
   Realm,
+  RealmExtended,
   Quest,
   Submission,
   KnowledgeCrystal,
@@ -31,7 +32,8 @@ import type {
   StudentPreferences,
   ThematicInterest,
   LearningStyle,
-  ThreeWayVote
+  ThreeWayVote,
+  ParentStudentLink
 } from '@/lib/types'
 
 interface ViewRouterProps {
@@ -60,6 +62,7 @@ interface ViewRouterProps {
   onImportQuests: (quests: Quest[]) => void
   onCreateRealm: () => void
   onCreateQuest: () => void
+  onUpdateRealm?: (realm: RealmExtended) => void
   // Preferences
   currentPreferences?: StudentPreferences
   onUpdatePreferences?: (
@@ -69,9 +72,15 @@ interface ViewRouterProps {
   ) => void
   // Parent portal
   linkedStudent?: UserProfile
+  linkedStudents?: UserProfile[]
+  parentId?: string
+  linkRequests?: ParentStudentLink[]
   pendingVotes?: ThreeWayVote[]
   voteHistory?: ThreeWayVote[]
   onCastParentVote?: (voteId: string, optionId: string) => void
+  onRequestParentLink?: (studentId: string) => void
+  onRemoveParentLink?: (studentId: string) => void
+  onSelectLinkedStudent?: (studentId: string) => void
   // Map mode toggle
   mapMode?: '3d' | '2d'
   onToggleMapMode?: () => void
@@ -112,12 +121,19 @@ export const ViewRouter = memo(function ViewRouter({
   onImportQuests,
   onCreateRealm,
   onCreateQuest,
+  onUpdateRealm,
   currentPreferences,
   onUpdatePreferences,
   linkedStudent,
+  linkedStudents,
+  parentId,
+  linkRequests,
   pendingVotes,
   voteHistory,
   onCastParentVote,
+  onRequestParentLink,
+  onRemoveParentLink,
+  onSelectLinkedStudent,
   mapMode = '3d',
   onToggleMapMode
 }: ViewRouterProps) {
@@ -357,6 +373,7 @@ export const ViewRouter = memo(function ViewRouter({
               onUpdateSubmission={onUpdateSubmission}
               onImportRealms={onImportRealms}
               onImportQuests={onImportQuests}
+              onUpdateRealm={onUpdateRealm}
             />
           </ErrorBoundary>
         </motion.div>
@@ -412,10 +429,17 @@ export const ViewRouter = memo(function ViewRouter({
           <ErrorBoundary FallbackComponent={DefaultErrorFallback}>
             <ParentPortal
               student={linkedStudent}
+              linkedStudents={linkedStudents}
+              allStudents={allProfiles.filter(p => p.role === 'student')}
+              parentId={parentId}
+              linkRequests={linkRequests}
               pendingVotes={pendingVotes || []}
               voteHistory={voteHistory || []}
               recentSubmissions={submissions.filter(s => s.studentId === linkedStudent.id)}
               onCastVote={onCastParentVote || (() => {})}
+              onRequestLink={onRequestParentLink}
+              onRemoveLink={onRemoveParentLink}
+              onSelectStudent={onSelectLinkedStudent}
             />
           </ErrorBoundary>
         </motion.div>

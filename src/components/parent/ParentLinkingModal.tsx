@@ -13,8 +13,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
-import type { LinkRequest } from '@/hooks/use-parent-linking'
-import type { UserProfile } from '@/lib/types'
+import type { UserProfile, ParentStudentLink } from '@/lib/types'
 import {
   Link,
   PaperPlaneTilt,
@@ -31,7 +30,7 @@ interface ParentLinkingModalProps {
   onClose: () => void
   parentId: string
   linkedStudents: UserProfile[]
-  pendingRequests: LinkRequest[]
+  pendingRequests: ParentStudentLink[]
   allStudents: UserProfile[]
   onRequestLink: (studentId: string) => void
   onRemoveLink: (studentId: string) => void

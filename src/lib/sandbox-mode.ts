@@ -22,9 +22,9 @@ import type {
   ThematicVariant,
   QuestStandardAlignment,
   StandardMastery,
-  ParentAccount
+  ParentAccount,
+  ParentStudentLink
 } from './types'
-import type { LinkRequest } from '@/hooks/use-parent-linking'
 import { DEFAULT_AVATAR } from './avatar-options'
 import { getDemoVotes } from './demo-votes'
 import { getDemoPreferences } from './demo-preferences'
@@ -137,31 +137,28 @@ export function getDemoRealms(): Realm[] {
       id: 'realm-demo-1',
       name: 'Mathematics Archipelago',
       description: 'A mystical chain of islands where numbers come alive and equations dance in the wind. Master the ancient arts of algebra and geometry.',
-      difficulty: 'beginner',
       color: '#3b82f6',
-      xpReward: 100,
       icon: '🏝️',
-      questIds: ['quest-demo-1', 'quest-demo-2']
+      questIds: ['quest-demo-1', 'quest-demo-2'],
+      createdAt: Date.now() - 60 * 24 * 60 * 60 * 1000 // 60 days ago
     },
     {
       id: 'realm-demo-2',
       name: 'Science Citadel',
       description: 'A towering fortress of discovery where physics, chemistry, and biology converge. Conduct experiments and unlock the secrets of the natural world.',
-      difficulty: 'intermediate',
       color: '#10b981',
-      xpReward: 200,
       icon: '🔬',
-      questIds: ['quest-demo-3']
+      questIds: ['quest-demo-3'],
+      createdAt: Date.now() - 45 * 24 * 60 * 60 * 1000 // 45 days ago
     },
     {
       id: 'realm-demo-3',
       name: 'Literature Labyrinth',
       description: 'An ever-shifting maze of stories and poems. Navigate through classic tales and modern narratives to find your way to literary mastery.',
-      difficulty: 'advanced',
       color: '#8b5cf6',
-      xpReward: 300,
       icon: '📚',
-      questIds: ['quest-demo-4']
+      questIds: ['quest-demo-4'],
+      createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000 // 30 days ago
     }
   ]
 }
@@ -174,10 +171,10 @@ export function getDemoQuests(): Quest[] {
     {
       id: 'quest-demo-1',
       realmId: 'realm-demo-1',
-      title: 'The Equation Enigma',
+      name: 'The Equation Enigma',
       description: 'Ancient scrolls have been discovered containing mysterious equations. Solve them to unlock the first portal of the Mathematics Archipelago.',
       difficulty: 'beginner',
-      xpReward: 50,
+      xpValue: 50,
       objectives: [
         'Solve the quadratic equation: x² - 5x + 6 = 0',
         'Find the slope of the line passing through (2,3) and (4,7)',
@@ -185,15 +182,16 @@ export function getDemoQuests(): Quest[] {
       ],
       status: 'available',
       type: 'learning',
-      unlockConditions: []
+      unlockConditions: [],
+      createdAt: Date.now() - 55 * 24 * 60 * 60 * 1000 // 55 days ago
     },
     {
       id: 'quest-demo-2',
       realmId: 'realm-demo-1',
-      title: 'Geometric Guardians',
+      name: 'Geometric Guardians',
       description: 'Three geometric guardians block your path. Answer their riddles about shapes, angles, and transformations to proceed.',
       difficulty: 'beginner',
-      xpReward: 75,
+      xpValue: 75,
       objectives: [
         'Calculate the sum of interior angles in a pentagon',
         'Identify the transformation: reflecting over the x-axis',
@@ -201,15 +199,16 @@ export function getDemoQuests(): Quest[] {
       ],
       status: 'locked',
       type: 'challenge',
-      unlockConditions: ['quest-demo-1']
+      unlockConditions: ['quest-demo-1'],
+      createdAt: Date.now() - 50 * 24 * 60 * 60 * 1000 // 50 days ago
     },
     {
       id: 'quest-demo-3',
       realmId: 'realm-demo-2',
-      title: 'Chemistry Conundrum',
+      name: 'Chemistry Conundrum',
       description: 'The Citadel\'s laboratory needs your help! Balance chemical equations and identify compounds to restore order to the Science Citadel.',
       difficulty: 'intermediate',
-      xpReward: 100,
+      xpValue: 100,
       objectives: [
         'Balance the equation: H₂ + O₂ → H₂O',
         'Identify the compound with formula NaCl',
@@ -217,15 +216,16 @@ export function getDemoQuests(): Quest[] {
       ],
       status: 'available',
       type: 'learning',
-      unlockConditions: []
+      unlockConditions: [],
+      createdAt: Date.now() - 40 * 24 * 60 * 60 * 1000 // 40 days ago
     },
     {
       id: 'quest-demo-4',
       realmId: 'realm-demo-3',
-      title: 'Tale of Two Poets',
+      name: 'Tale of Two Poets',
       description: 'Compare and contrast two famous poems from different eras. Analyze their themes, structures, and historical contexts.',
       difficulty: 'advanced',
-      xpReward: 150,
+      xpValue: 150,
       objectives: [
         'Identify the rhyme scheme of a Shakespearean sonnet',
         'Analyze the use of metaphor in "The Road Not Taken"',
@@ -233,7 +233,8 @@ export function getDemoQuests(): Quest[] {
       ],
       status: 'available',
       type: 'essay',
-      unlockConditions: []
+      unlockConditions: [],
+      createdAt: Date.now() - 25 * 24 * 60 * 60 * 1000 // 25 days ago
     }
   ]
 }
@@ -291,6 +292,8 @@ export function getDemoCrystals(): KnowledgeCrystal[] {
       title: 'Quadratic Mastery',
       content: 'You have mastered the art of solving quadratic equations! Remember: use the quadratic formula x = (-b ± √(b²-4ac)) / 2a',
       questId: 'quest-demo-1',
+      studentId: 'demo-user-1',
+      isAttuned: true,
       createdAt: Date.now() - 23 * 60 * 60 * 1000,
       rarity: 'rare'
     }
@@ -344,7 +347,7 @@ export function getDemoParentAccounts(): ParentAccount[] {
 /**
  * Get demo parent-student link requests for sandbox mode
  */
-export function getDemoLinkRequests(): LinkRequest[] {
+export function getDemoLinkRequests(): ParentStudentLink[] {
   return [
     // Approved link: parent-01 linked to demo-user-1
     {
@@ -353,7 +356,7 @@ export function getDemoLinkRequests(): LinkRequest[] {
       studentId: 'demo-user-1',
       status: 'approved',
       requestedAt: Date.now() - 29 * 24 * 60 * 60 * 1000,
-      respondedAt: Date.now() - 28 * 24 * 60 * 60 * 1000
+      resolvedAt: Date.now() - 28 * 24 * 60 * 60 * 1000
     },
     // Pending link: parent-02 wants to link to demo-user-1
     {
@@ -370,7 +373,7 @@ export function getDemoLinkRequests(): LinkRequest[] {
       studentId: 'student-emma-01',
       status: 'approved',
       requestedAt: Date.now() - 40 * 24 * 60 * 60 * 1000,
-      respondedAt: Date.now() - 39 * 24 * 60 * 60 * 1000
+      resolvedAt: Date.now() - 39 * 24 * 60 * 60 * 1000
     },
     // Rejected link example
     {
@@ -379,7 +382,7 @@ export function getDemoLinkRequests(): LinkRequest[] {
       studentId: 'student-emma-01',
       status: 'rejected',
       requestedAt: Date.now() - 10 * 24 * 60 * 60 * 1000,
-      respondedAt: Date.now() - 9 * 24 * 60 * 60 * 1000
+      resolvedAt: Date.now() - 9 * 24 * 60 * 60 * 1000
     }
   ]
 }
@@ -452,7 +455,7 @@ export function initializeSandboxData(): {
   alignments: QuestStandardAlignment[]
   mastery: StandardMastery[]
   parentAccounts: ParentAccount[]
-  linkRequests: LinkRequest[]
+  linkRequests: ParentStudentLink[]
   studentProfiles: UserProfile[]
 } {
   if (!isSandboxMode()) {

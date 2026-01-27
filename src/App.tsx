@@ -8,6 +8,8 @@ import { useDialogs } from '@/hooks/use-dialogs'
 import { useQuestEvaluation } from '@/hooks/use-quest-evaluation'
 import { useThematicVariants } from '@/hooks/use-thematic-variants'
 import { useVoting } from '@/hooks/use-voting'
+import { useParentLinking } from '@/hooks/use-parent-linking'
+import { useNotifications } from '@/hooks/use-notifications'
 import { useAIConsent, type AIFeature } from '@/hooks/use-ai-consent'
 import { SandboxBanner } from '@/components/SandboxBanner'
 import { AIConsentModal } from '@/components/AIConsentModal'
@@ -26,7 +28,7 @@ import { NameDialog } from '@/components/NameDialog'
 import { Toaster } from '@/components/ui/sonner'
 import { isSandboxMode } from '@/lib/sandbox-mode'
 import { soundEffects } from '@/lib/sound-effects'
-import type { Realm, Quest, ThematicInterest, LearningStyle } from '@/lib/types'
+import type { Realm, Quest, ThematicInterest, LearningStyle, RealmExtended } from '@/lib/types'
 
 function AppContent() {
   const { theme, role, themeConfig, cycleTheme, toggleRole, setRole } = useThemeContext()
@@ -79,6 +81,18 @@ function AppContent() {
   // Voting system for parent portal
   const { votes, castVote, getPendingVotes, getVotesByStudent } = useVoting()
 
+  // Parent linking system
+  const {
+    linkRequests,
+    linkedStudents: linkedStudentIds,
+    requestLink,
+    removeLink,
+    getLinkedStudentsForParent
+  } = useParentLinking(profile?.id)
+
+  // Notifications system
+  const { addNotification } = useNotifications()
+
   // AI consent management
   const { hasConsented, checkFeatureConsent } = useAIConsent()
   const [showAIConsentModal, setShowAIConsentModal] = useState(false)
@@ -107,15 +121,55 @@ function AppContent() {
     }
   }, [profile?.id, setPreferences])
 
-  // Demo linked student for parent role (first student profile or fallback to current)
+  // State for selected linked student
+  const [selectedLinkedStudentId, setSelectedLinkedStudentId] = useState<string | null>(null)
+
+  // Get linked student profiles for parent role
+  const linkedStudentProfiles = useMemo(() => {
+    if (role === 'parent' && profile?.id) {
+      const linkedIds = getLinkedStudentsForParent(profile.id)
+      return allProfiles.filter(p => linkedIds.includes(p.id))
+    }
+    return []
+  }, [role, profile?.id, allProfiles, getLinkedStudentsForParent])
+
+  // Selected or first linked student for parent role
   const linkedStudent = useMemo(() => {
     if (role === 'parent') {
-      // In sandbox mode, use the first student-like profile or fall back to current
+      // If a specific student is selected, use that
+      if (selectedLinkedStudentId) {
+        const selected = linkedStudentProfiles.find(p => p.id === selectedLinkedStudentId)
+        if (selected) return selected
+      }
+      // Otherwise use first linked student
+      if (linkedStudentProfiles.length > 0) {
+        return linkedStudentProfiles[0]
+      }
+      // Fallback: in sandbox mode, use first student-like profile
       const studentProfile = allProfiles.find(p => p.role === 'student')
       return studentProfile || profile
     }
     return undefined
-  }, [role, allProfiles, profile])
+  }, [role, selectedLinkedStudentId, linkedStudentProfiles, allProfiles, profile])
+
+  // Handle selecting a linked student
+  const handleSelectLinkedStudent = useCallback((studentId: string) => {
+    setSelectedLinkedStudentId(studentId)
+  }, [])
+
+  // Handle requesting a parent link
+  const handleRequestParentLink = useCallback((studentId: string) => {
+    if (profile?.id) {
+      requestLink(studentId, profile.id)
+    }
+  }, [profile?.id, requestLink])
+
+  // Handle removing a parent link
+  const handleRemoveParentLink = useCallback((studentId: string) => {
+    if (profile?.id) {
+      removeLink(profile.id, studentId)
+    }
+  }, [profile?.id, removeLink])
 
   // Votes for parent portal
   const pendingVotesForParent = useMemo(() => {
@@ -134,7 +188,12 @@ function AppContent() {
 
   const handleCastParentVote = useCallback((voteId: string, optionId: string) => {
     castVote(voteId, 'parent', optionId)
-  }, [castVote])
+    addNotification({
+      type: 'vote-cast',
+      title: 'Vote Recorded',
+      message: 'Your vote has been recorded successfully'
+    })
+  }, [castVote, addNotification])
 
   const [currentView, setCurrentView] = useState('world-map')
   const [selectedRealmId, setSelectedRealmId] = useState<string | null>(null)
@@ -148,19 +207,51 @@ function AppContent() {
 
   const isInSandboxMode = useMemo(() => isSandboxMode(), [])
 
+  // Wrapped callbacks with notifications
+  const handleAddSubmissionWithNotification = useCallback((submission: Parameters<typeof addSubmission>[0]) => {
+    addSubmission(submission)
+    if (submission.score !== undefined) {
+      addNotification({
+        type: 'quest-graded',
+        title: 'Quest Graded',
+        message: `Your submission received a score of ${submission.score}%`,
+        questId: submission.questId
+      })
+    }
+  }, [addSubmission, addNotification])
+
+  const handleAddArtifactWithNotification = useCallback((artifact: Parameters<typeof addArtifact>[0]) => {
+    addArtifact(artifact)
+    addNotification({
+      type: 'achievement-earned',
+      title: 'Artifact Earned!',
+      message: `You earned the ${artifact.name} artifact!`,
+      achievementId: artifact.id
+    })
+  }, [addArtifact, addNotification])
+
+  const handleLevelUpWithNotification = useCallback((level: number) => {
+    showLevelUpCelebration(level, profile.role)
+    addNotification({
+      type: 'level-up',
+      title: 'Level Up!',
+      message: `Congratulations! You reached level ${level}!`
+    })
+  }, [showLevelUpCelebration, profile.role, addNotification])
+
   // Quest evaluation with callbacks
   const { evaluateQuest } = useQuestEvaluation({
     themeConfig,
     theme,
     profile,
     callbacks: {
-      addSubmission,
+      addSubmission: handleAddSubmissionWithNotification,
       addCrystal,
       addQuest,
       updateQuestStatus,
       updateProfileXp,
-      addArtifact,
-      onLevelUp: (level) => showLevelUpCelebration(level, profile.role)
+      addArtifact: handleAddArtifactWithNotification,
+      onLevelUp: handleLevelUpWithNotification
     }
   })
 
@@ -236,6 +327,10 @@ function AppContent() {
     addRealm(realm)
     closeRealmCreator()
   }, [addRealm, closeRealmCreator])
+
+  const handleUpdateRealm = useCallback((updatedRealm: RealmExtended) => {
+    setRealms(realms.map(r => r.id === updatedRealm.id ? updatedRealm : r))
+  }, [realms, setRealms])
 
   const handleCreateQuest = useCallback((quest: Quest) => {
     addQuest(quest)
@@ -376,12 +471,19 @@ function AppContent() {
           onImportQuests={importQuests}
           onCreateRealm={openRealmCreator}
           onCreateQuest={openQuestCreator}
+          onUpdateRealm={handleUpdateRealm}
           currentPreferences={currentPreferences}
           onUpdatePreferences={handleUpdatePreferences}
           linkedStudent={linkedStudent}
+          linkedStudents={linkedStudentProfiles}
+          parentId={profile?.id}
+          linkRequests={linkRequests}
           pendingVotes={pendingVotesForParent}
           voteHistory={voteHistoryForParent}
           onCastParentVote={handleCastParentVote}
+          onRequestParentLink={handleRequestParentLink}
+          onRemoveParentLink={handleRemoveParentLink}
+          onSelectLinkedStudent={handleSelectLinkedStudent}
           mapMode={mapMode}
           onToggleMapMode={handleToggleMapMode}
         />

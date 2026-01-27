@@ -154,8 +154,8 @@ describe('Sandbox Mode', () => {
       realms.forEach(realm => {
         expect(realm.id).toMatch(/^realm-demo-/)
         expect(realm.name).toBeTruthy()
-        expect(realm.difficulty).toMatch(/^(beginner|intermediate|advanced)$/)
-        expect(realm.xpReward).toBeGreaterThan(0)
+        expect(realm.color).toBeTruthy()
+        expect(realm.createdAt).toBeGreaterThan(0)
       })
     })
   })
@@ -166,7 +166,7 @@ describe('Sandbox Mode', () => {
       expect(Array.isArray(quests)).toBe(true)
       expect(quests.length).toBeGreaterThan(0)
       expect(quests[0]).toHaveProperty('id')
-      expect(quests[0]).toHaveProperty('title')
+      expect(quests[0]).toHaveProperty('name')
       expect(quests[0]).toHaveProperty('realmId')
     })
 
@@ -175,9 +175,10 @@ describe('Sandbox Mode', () => {
       quests.forEach(quest => {
         expect(quest.id).toMatch(/^quest-demo-/)
         expect(quest.realmId).toMatch(/^realm-demo-/)
-        expect(quest.title).toBeTruthy()
-        expect(quest.xpReward).toBeGreaterThan(0)
+        expect(quest.name).toBeTruthy()
+        expect(quest.xpValue).toBeGreaterThan(0)
         expect(Array.isArray(quest.objectives)).toBe(true)
+        expect(quest.createdAt).toBeGreaterThan(0)
       })
     })
   })

@@ -154,7 +154,7 @@ export function MobileNav({
                       onClick={onRoleToggle}
                     >
                       <ArrowsClockwise size={20} />
-                      Switch to {role === 'teacher' ? 'Student' : 'Teacher'}
+                      Switch to {role === 'teacher' ? 'Student' : role === 'student' ? 'Parent' : 'Teacher'}
                     </Button>
                   </div>
                 </div>

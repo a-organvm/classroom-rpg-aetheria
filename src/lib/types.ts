@@ -67,9 +67,12 @@ export interface Realm {
   color: string
   position?: { x: number; y: number; z: number }
   createdAt: number
+  icon?: string
+  questIds?: string[]
 }
 
-export type QuestType = 'standard' | 'boss' | 'redemption'
+export type QuestType = 'standard' | 'boss' | 'redemption' | 'learning' | 'challenge' | 'essay'
+export type QuestDifficulty = 'beginner' | 'intermediate' | 'advanced'
 export type QuestStatus = 'locked' | 'available' | 'in_progress' | 'completed' | 'failed'
 
 export interface Quest {
@@ -84,6 +87,9 @@ export interface Quest {
   prerequisiteIds?: string[]
   standardIds?: string[]
   createdAt: number
+  difficulty?: QuestDifficulty
+  objectives?: string[]
+  unlockConditions?: string[]
 }
 
 export type SubmissionStatus = 'pending' | 'evaluated' | 'resubmitted'
@@ -109,6 +115,7 @@ export interface KnowledgeCrystal {
   content: string
   isAttuned: boolean
   createdAt: number
+  rarity?: 'common' | 'rare' | 'epic' | 'legendary'
 }
 
 export interface Artifact {

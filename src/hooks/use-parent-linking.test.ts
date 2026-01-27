@@ -119,7 +119,7 @@ describe('useParentLinking', () => {
         expect.objectContaining({
           id: 'req-01',
           status: 'approved',
-          respondedAt: expect.any(Number)
+          resolvedAt: expect.any(Number)
         })
       ])
     })
@@ -148,7 +148,7 @@ describe('useParentLinking', () => {
         expect.objectContaining({
           id: 'req-01',
           status: 'rejected',
-          respondedAt: expect.any(Number)
+          resolvedAt: expect.any(Number)
         })
       ])
     })
