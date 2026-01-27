@@ -530,3 +530,48 @@ export { getDemoVotes } from './demo-votes'
 export { getDemoPreferences } from './demo-preferences'
 export { getDemoVariants, type QuestVariants } from './demo-variants'
 export { getDemoAlignments, getDemoMastery } from './demo-standards-data'
+
+/**
+ * Initialize all sandbox demo data to localStorage (for dev mode)
+ * Call this ONCE at app startup before any hooks mount
+ */
+export function initializeLocalStorageSandboxData(): void {
+  if (!isSandboxMode() || typeof localStorage === 'undefined') {
+    return
+  }
+
+  // Check if already initialized
+  const hasRealms = localStorage.getItem(getSandboxKey('aetheria-realms'))
+  const hasQuests = localStorage.getItem(getSandboxKey('aetheria-quests'))
+  if (hasRealms && hasQuests) {
+    return // Already initialized
+  }
+
+  // Get all demo data
+  const demoData = initializeSandboxData()
+
+  // Write ALL keys to localStorage at once
+  const keyDataPairs = [
+    ['aetheria-realms', demoData.realms],
+    ['aetheria-quests', demoData.quests],
+    ['aetheria-profile', demoData.profile],
+    ['aetheria-submissions', demoData.submissions],
+    ['aetheria-crystals', demoData.crystals],
+    ['aetheria-all-profiles', [demoData.profile]],
+    ['aetheria-votes', demoData.votes],
+    ['aetheria-student-prefs', demoData.studentPrefs],
+    ['aetheria-variants', demoData.variants],
+    ['aetheria-alignments', demoData.alignments],
+    ['aetheria-mastery', demoData.mastery],
+    ['aetheria-parent-accounts', demoData.parentAccounts],
+    ['aetheria-parent-link-requests', demoData.linkRequests],
+    ['aetheria-student-profiles', demoData.studentProfiles],
+  ] as const
+
+  for (const [key, data] of keyDataPairs) {
+    const sandboxKey = getSandboxKey(key)
+    localStorage.setItem(sandboxKey, JSON.stringify(data))
+  }
+
+  console.log('🏖️ Sandbox demo data initialized to localStorage')
+}

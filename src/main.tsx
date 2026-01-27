@@ -7,6 +7,7 @@ import "@github/spark/spark"
 import App from './App.tsx'
 import { ErrorFallback } from './ErrorFallback.tsx'
 import { initErrorTracking } from './lib/error-tracker.ts'
+import { initializeLocalStorageSandboxData } from './lib/sandbox-mode.ts'
 
 import "./main.css"
 import "./styles/theme.css"
@@ -14,6 +15,11 @@ import "./index.css"
 
 // Initialize error tracking
 initErrorTracking()
+
+// Initialize sandbox localStorage data before React renders (dev mode only)
+if (import.meta.env.DEV) {
+  initializeLocalStorageSandboxData()
+}
 
 // Track Web Vitals
 function sendToAnalytics(metric: Metric) {
