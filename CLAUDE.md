@@ -83,6 +83,10 @@ Uses Conventional Commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chor
 
 Pre-commit hooks enforce formatting, linting, and secrets detection.
 
+## Deployment
+
+Live at **https://classroom-rpg-aetheria.netlify.app** (Netlify, `main` branch auto-deploys).
+
 <!-- ORGANVM:AUTO:START -->
 ## System Context (auto-generated — do not edit)
 
