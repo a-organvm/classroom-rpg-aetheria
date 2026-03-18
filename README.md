@@ -440,3 +440,11 @@ MIT License. See [LICENSE](LICENSE) for the full text.
 **[@4444j99](https://github.com/4444j99)**
 
 Aetheria is part of the ORGAN-III (Ergon) portfolio within the [organvm](https://github.com/meta-organvm) creative-institutional system — an eight-organ architecture coordinating theory, art, commerce, orchestration, public process, community, and marketing across 79 repositories and 8 GitHub organizations.
+
+<!-- SYSTEM-NAV-START -->
+
+---
+
+<sub>[Portfolio](https://4444j99.github.io/portfolio/) · [System Directory](https://4444j99.github.io/portfolio/directory/) · [ORGAN III · Ergon](https://organvm-iii-ergon.github.io/) · Part of the <a href="https://4444j99.github.io/portfolio/directory/">ORGANVM eight-organ system</a></sub>
+
+<!-- SYSTEM-NAV-END -->
