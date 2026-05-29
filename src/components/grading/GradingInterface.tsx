@@ -22,7 +22,7 @@ import { THEME_CONFIGS } from '@/lib/types'
 import { sanitizeLLMInput } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
-import { FeedbackSnippetBrowser } from './educator/FeedbackSnippetBrowser'
+import { FeedbackSnippetBrowser } from '@/components/educator/FeedbackSnippetBrowser'
 
 interface GradingInterfaceProps {
   submission: Submission

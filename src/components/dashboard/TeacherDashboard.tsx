@@ -35,8 +35,8 @@ import {
   RealmSettingsModal,
   ReportGenerationPanel
 } from '@/components/educator'
-import { StandardsProgress } from './standards/StandardsProgress'
-import { StandardsReport } from './standards/StandardsReport'
+import { StandardsProgress } from '@/components/standards/StandardsProgress'
+import { StandardsReport } from '@/components/standards/StandardsReport'
 import { useStandards } from '@/hooks/use-standards'
 import { ALL_STANDARDS } from '@/lib/standards'
 import type { LearningStandardRef } from '@/lib/types'
